@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { signUp } from '../actions'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
@@ -23,31 +21,57 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Create your account</h1>
-          <p className="mt-2 text-sm text-gray-500">Start collaborating with your team</p>
+          <span className="text-white font-semibold text-2xl tracking-tight">Collab.</span>
+          <p className="mt-3 text-sm text-white/40">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input id="full_name" name="full_name" label="Full name" type="text"
-            placeholder="Jane Smith" required />
-          <Input id="email" name="email" label="Email" type="email"
-            placeholder="jane@example.com" required />
-          <Input id="password" name="password" label="Password" type="password"
-            placeholder="Min. 6 characters" minLength={6} required />
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Full name</label>
+            <input
+              id="full_name" name="full_name" type="text"
+              placeholder="Jane Smith" required
+              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Email</label>
+            <input
+              id="email" name="email" type="email"
+              placeholder="jane@example.com" required
+              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Password</label>
+            <input
+              id="password" name="password" type="password"
+              placeholder="Min. 6 characters" minLength={6} required
+              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+            />
+          </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">{error}</p>
           )}
 
-          <Button type="submit" loading={loading}>Create account</Button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex w-full justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-white/90 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Creating account...' : 'Create account'}
+          </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-white/30">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link href="/login" className="font-medium text-white/60 hover:text-white transition-colors">
             Log in
           </Link>
         </p>

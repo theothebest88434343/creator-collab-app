@@ -24,7 +24,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="text-white font-semibold text-2xl tracking-tight">Vault.</span>
+          <span className="text-white font-semibold text-2xl tracking-tight">Collab.</span>
           <p className="mt-3 text-sm text-white/40">Log in to your account</p>
         </div>
 

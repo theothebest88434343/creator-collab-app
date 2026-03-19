@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 fixed top-0 left-0 h-screen bg-[#141414] border-r border-white/5 flex flex-col">
         {/* Logo */}
         <div className="px-6 py-5 border-b border-white/5">
-          <span className="text-white font-semibold text-lg tracking-tight">Vault.</span>
+          <span className="text-white font-semibold text-lg tracking-tight">Collab.</span>
         </div>
 
         {/* Nav */}
