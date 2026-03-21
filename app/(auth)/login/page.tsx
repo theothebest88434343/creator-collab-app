@@ -51,6 +51,12 @@ export default function LoginPage() {
             <p className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">{error}</p>
           )}
 
+          <div className="flex justify-end">
+            <Link href="/reset-password" className="text-xs text-white/30 hover:text-white/60 transition-colors">
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
