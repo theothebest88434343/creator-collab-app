@@ -34,3 +34,13 @@ export async function createProject(name: string, description: string, userId: s
 
   return project
 }
+
+export async function deleteProject(projectId: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) throw error
+}

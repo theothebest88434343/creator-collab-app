@@ -25,7 +25,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <span className="text-white font-semibold text-2xl tracking-tight">Collab.</span>
-          <p className="mt-3 text-sm text-white/40">Create your account</p>
+          <p className="mt-3 text-sm text-white/40">Get started for free</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -33,7 +33,7 @@ export default function SignupPage() {
             <label className="block text-sm font-medium text-white/50 mb-1">Full name</label>
             <input
               id="full_name" name="full_name" type="text"
-              placeholder="Jane Smith" required
+              placeholder="Full Name" required
               className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
             />
           </div>
@@ -42,7 +42,7 @@ export default function SignupPage() {
             <label className="block text-sm font-medium text-white/50 mb-1">Email</label>
             <input
               id="email" name="email" type="email"
-              placeholder="jane@example.com" required
+              placeholder="Email" required
               className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
             />
           </div>

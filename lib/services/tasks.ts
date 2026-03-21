@@ -38,3 +38,13 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'in_prog
 
   if (error) throw error
 }
+
+export async function deleteTask(taskId: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', taskId)
+
+  if (error) throw error
+}
