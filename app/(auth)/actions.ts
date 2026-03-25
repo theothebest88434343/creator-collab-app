@@ -15,7 +15,7 @@ export async function signUp(formData: FormData) {
   })
 
   if (error) return { error: error.message }
-  redirect('/projects')
+return { success: true }
 }
 
 export async function signIn(formData: FormData) {

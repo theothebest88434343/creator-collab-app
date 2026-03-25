@@ -7,6 +7,8 @@ import { signUp } from '../actions'
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -17,7 +19,31 @@ export default function SignupPage() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else {
+      setSent(true)
     }
+  }
+
+  if (sent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4">
+        <div className="w-full max-w-sm text-center">
+          <span className="text-white font-semibold text-2xl tracking-tight">Collab.</span>
+          <div className="mt-8 bg-[#1a1a1a] rounded-xl border border-white/5 p-6">
+            <h2 className="text-white font-medium mb-2">Check your email</h2>
+            <p className="text-white/40 text-sm leading-relaxed">
+              We sent a confirmation link to <span className="text-white/60">{email}</span>. Click the link to activate your account.
+            </p>
+          </div>
+          <p className="mt-6 text-sm text-white/30">
+            Already confirmed?{' '}
+            <Link href="/login" className="font-medium text-white/60 hover:text-white transition-colors">
+              Log in
+            </Link>
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -43,6 +69,8 @@ export default function SignupPage() {
             <input
               id="email" name="email" type="email"
               placeholder="Email" required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
             />
           </div>
