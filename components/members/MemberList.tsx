@@ -29,6 +29,14 @@ export function MemberList({ projectId, currentUserId }: Props) {
 
   if (loading) return <p className="text-sm text-white/40">Loading members...</p>
 
+  if (members.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed border-white/10">
+      <p className="text-3xl mb-3">👥</p>
+      <p className="text-sm font-medium text-white/40">No members yet</p>
+      <p className="text-xs text-white/20 mt-1">Invite someone to collaborate on this project</p>
+    </div>
+  )
+
   return (
     <div className="space-y-2">
       {members.map(member => (

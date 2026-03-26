@@ -31,7 +31,14 @@ export function FileList({ projectId }: Props) {
   }
 
   if (loading) return <p className="text-sm text-white/40">Loading files...</p>
-  if (files.length === 0) return <p className="text-sm text-white/40">No files uploaded yet.</p>
+
+  if (files.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed border-white/10">
+      <p className="text-3xl mb-3">📁</p>
+      <p className="text-sm font-medium text-white/40">No files yet</p>
+      <p className="text-xs text-white/20 mt-1">Upload a file above to get started</p>
+    </div>
+  )
 
   return (
     <div className="space-y-2">
