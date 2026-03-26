@@ -73,14 +73,9 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
         schema: 'public',
         table: 'task_comments',
         filter: `task_id=eq.${task.id}`
-      }, async (payload) => {
-        const { data: user } = await supabase
-          .from('users')
-          .select('full_name, email')
-          .eq('id', payload.new.user_id)
-          .single()
-        setComments(prev => [...prev, { ...payload.new, user } as Comment])
-      })
+      }, (payload) => {
+  setComments(prev => [...prev, payload.new as Comment])
+})
       .on('postgres_changes', {
         event: 'DELETE',
         schema: 'public',
@@ -99,15 +94,14 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   }, [comments])
 
   async function loadComments() {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('task_comments')
-      .select('*, user:users(full_name, email)')
-      .eq('task_id', task.id)
-      .order('created_at', { ascending: true })
-    if (data) setComments(data as Comment[])
-  }
-
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('task_comments')
+    .select('*')
+    .eq('task_id', task.id)
+    .order('created_at', { ascending: true })
+  if (data) setComments(data as Comment[])
+}
   async function handleAddComment(e: React.FormEvent) {
     e.preventDefault()
     if (!newComment.trim()) return
