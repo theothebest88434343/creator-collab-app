@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { deleteProject } from '@/lib/services/projects'
+import { deleteProject, updateProject } from '@/lib/services/projects'
 import { EditProjectModal } from './EditProjectModal'
 
 type Project = {
@@ -10,6 +10,7 @@ type Project = {
   name: string
   description: string | null
   created_at: string
+  status?: 'active' | 'on_hold' | 'completed'
 }
 
 type Props = {
@@ -17,9 +18,22 @@ type Props = {
   onDeleted: () => void
 }
 
+const STATUS_STYLES = {
+  active: 'bg-green-400/10 text-green-400',
+  on_hold: 'bg-yellow-400/10 text-yellow-400',
+  completed: 'bg-white/10 text-white/40',
+}
+
+const STATUS_LABELS = {
+  active: 'Active',
+  on_hold: 'On hold',
+  completed: 'Completed',
+}
+
 export function ProjectCard({ project, onDeleted }: Props) {
   const [showEdit, setShowEdit] = useState(false)
   const [currentProject, setCurrentProject] = useState(project)
+  const [showStatusMenu, setShowStatusMenu] = useState(false)
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault()
@@ -35,6 +49,15 @@ export function ProjectCard({ project, onDeleted }: Props) {
     setShowEdit(true)
   }
 
+  async function handleStatusChange(e: React.MouseEvent, status: 'active' | 'on_hold' | 'completed') {
+    e.preventDefault()
+    e.stopPropagation()
+    const supabase = (await import('@/lib/supabase/client')).createClient()
+    await supabase.from('projects').update({ status }).eq('id', currentProject.id)
+    setCurrentProject(prev => ({ ...prev, status }))
+    setShowStatusMenu(false)
+  }
+
   async function handleUpdated() {
     const supabase = (await import('@/lib/supabase/client')).createClient()
     const { data } = await supabase
@@ -44,6 +67,8 @@ export function ProjectCard({ project, onDeleted }: Props) {
       .single()
     if (data) setCurrentProject(data)
   }
+
+  const status = currentProject.status || 'active'
 
   return (
     <>
@@ -63,13 +88,50 @@ export function ProjectCard({ project, onDeleted }: Props) {
               ✕
             </button>
           </div>
-          <h2 className="font-medium text-white mb-1">{currentProject.name}</h2>
+
+          <div className="flex items-start justify-between mb-1 pr-12">
+            <h2 className="font-medium text-white">{currentProject.name}</h2>
+          </div>
+
           {currentProject.description && (
             <p className="text-sm text-white/40 line-clamp-2">{currentProject.description}</p>
           )}
-          <p className="text-xs text-white/20 mt-3">
-            {new Date(currentProject.created_at).toLocaleDateString()}
-          </p>
+
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-xs text-white/20">
+              {new Date(currentProject.created_at).toLocaleDateString()}
+            </p>
+
+            {/* Status badge */}
+            <div className="relative">
+              <button
+                onClick={e => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setShowStatusMenu(!showStatusMenu)
+                }}
+                className={`text-xs px-2 py-0.5 rounded-md font-medium transition-colors ${STATUS_STYLES[status]}`}
+              >
+                {STATUS_LABELS[status]}
+              </button>
+
+              {showStatusMenu && (
+                <div className="absolute bottom-full right-0 mb-1 bg-[#2a2a2a] border border-white/10 rounded-lg overflow-hidden shadow-xl z-10 w-28">
+                  {(Object.keys(STATUS_LABELS) as Array<keyof typeof STATUS_LABELS>).map(s => (
+                    <button
+                      key={s}
+                      onClick={e => handleStatusChange(e, s)}
+                      className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-white/5 ${
+                        status === s ? 'text-white' : 'text-white/50'
+                      }`}
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </Link>
 
