@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getTasks, updateTaskStatus } from '@/lib/services/tasks'
 import { KanbanColumn } from '@/components/tasks/KanbanColumn'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
+import { Skeleton } from '@/components/ui/Skeleton'
 import Link from 'next/link'
 import {
   DndContext,
@@ -119,7 +120,27 @@ export default function ProjectPage() {
     await updateTaskStatus(draggedTask.id, newStatus as Task['status'])
   }
 
-  if (loading) return <div className="p-8 text-white/40 text-sm">Loading...</div>
+  if (loading) return (
+  <div className="min-h-screen bg-[#0f0f0f]">
+    <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="mb-8 space-y-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-3 w-32" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-20 mb-3" />
+            {[...Array(3)].map((_, j) => (
+              <Skeleton key={j} className="h-12 w-full" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)
   if (!project) return <div className="p-8 text-white/40 text-sm">Project not found.</div>
 
   const getColumnTasks = (status: string) => tasks.filter(t => t.status === status)

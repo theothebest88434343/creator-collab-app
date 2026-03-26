@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MemberList } from '@/components/members/MemberList'
 import { InviteModal } from '@/components/members/InviteModal'
+import { Skeleton } from '@/components/ui/Skeleton'
 import Link from 'next/link'
 
 export default function MembersPage() {
   const { id } = useParams()
   const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [refresh, setRefresh] = useState(0)
 
@@ -18,6 +20,7 @@ export default function MembersPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) setUserId(user.id)
+      setLoading(false)
     }
     load()
   }, [])
@@ -40,12 +43,26 @@ export default function MembersPage() {
           </button>
         </div>
 
-        {userId && (
-          <MemberList
-            key={refresh}
-            projectId={id as string}
-            currentUserId={userId}
-          />
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          userId && (
+            <MemberList
+              key={refresh}
+              projectId={id as string}
+              currentUserId={userId}
+            />
+          )
         )}
       </div>
 

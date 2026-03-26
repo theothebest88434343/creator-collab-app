@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { FileUpload } from '@/components/files/FileUpload'
 import { FileList } from '@/components/files/FileList'
+import { Skeleton } from '@/components/ui/Skeleton'
 import Link from 'next/link'
 
 export default function FilesPage() {
   const { id } = useParams()
   const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
@@ -17,6 +19,7 @@ export default function FilesPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) setUserId(user.id)
+      setLoading(false)
     }
     load()
   }, [])
@@ -31,17 +34,27 @@ export default function FilesPage() {
           <h1 className="text-2xl font-semibold text-white">Files</h1>
         </div>
 
-        {userId && (
-          <div className="mb-6 bg-[#1a1a1a] rounded-xl border border-white/5 px-5 py-4">
-            <FileUpload
-              projectId={id as string}
-              userId={userId}
-              onUploaded={() => setRefresh(r => r + 1)}
-            />
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
           </div>
+        ) : (
+          <>
+            {userId && (
+              <div className="mb-6 bg-[#1a1a1a] rounded-xl border border-white/5 px-5 py-4">
+                <FileUpload
+                  projectId={id as string}
+                  userId={userId}
+                  onUploaded={() => setRefresh(r => r + 1)}
+                />
+              </div>
+            )}
+            <FileList key={refresh} projectId={id as string} />
+          </>
         )}
-
-        <FileList key={refresh} projectId={id as string} />
       </div>
     </div>
   )

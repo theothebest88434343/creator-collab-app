@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getProjects } from '@/lib/services/projects'
 import { ProjectCard } from '@/components/projects/ProjectCard'
 import { NewProjectModal } from '@/components/projects/NewProjectModal'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
@@ -45,7 +46,15 @@ export default function ProjectsPage() {
         </div>
 
         {loading ? (
-          <p className="text-white/40 text-sm">Loading...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5 space-y-3">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-white/40 mb-4">No projects yet.</p>
