@@ -99,49 +99,57 @@ export default function ProjectPage() {
   }, [id])
 
   function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event
-    if (!over) return
+  const { active, over } = event
+  if (!over) return
 
-    const activeId = active.id as string
-    const overId = over.id as string
+  const activeId = active.id as string
+  const overId = over.id as string
 
-    if (activeId === overId) return
+  if (activeId === overId) return
 
-    const activeTask = tasks.find(t => t.id === activeId)
-    const overTask = tasks.find(t => t.id === overId)
-    const overColumn = COLUMNS.find(c => c.id === overId)
+  const activeTask = tasks.find(t => t.id === activeId)
+  if (!activeTask) return
 
-    if (!activeTask) return
+  const overTask = tasks.find(t => t.id === overId)
+  const overColumn = COLUMNS.find(c => c.id === overId)
 
-    // Dragging over a different column's task
-    if (overTask && activeTask.status !== overTask.status) {
-      setTasks(prev => {
-        const activeIndex = prev.findIndex(t => t.id === activeId)
-        const overIndex = prev.findIndex(t => t.id === overId)
-        const updated = [...prev]
-        updated[activeIndex] = { ...updated[activeIndex], status: overTask.status }
-        return arrayMove(updated, activeIndex, overIndex)
-      })
-      return
-    }
+  // Dragging over a column directly — move to top of that column
+  if (overColumn) {
+    setTasks(prev => {
+      const activeIndex = prev.findIndex(t => t.id === activeId)
+      const firstTaskInColumn = prev.find(t => t.status === overColumn.id)
+      const targetIndex = firstTaskInColumn
+        ? prev.findIndex(t => t.id === firstTaskInColumn.id)
+        : prev.length
 
-    // Dragging over a column directly
-    if (overColumn && activeTask.status !== overColumn.id) {
-      setTasks(prev => prev.map(t =>
-        t.id === activeId ? { ...t, status: overColumn.id as Task['status'] } : t
-      ))
-      return
-    }
-
-    // Reordering within same column
-    if (overTask && activeTask.status === overTask.status) {
-      setTasks(prev => {
-        const activeIndex = prev.findIndex(t => t.id === activeId)
-        const overIndex = prev.findIndex(t => t.id === overId)
-        return arrayMove(prev, activeIndex, overIndex)
-      })
-    }
+      const updated = [...prev]
+      updated[activeIndex] = { ...updated[activeIndex], status: overColumn.id as Task['status'] }
+      return arrayMove(updated, activeIndex, targetIndex)
+    })
+    return
   }
+
+  // Dragging over a task in a different column
+  if (overTask && activeTask.status !== overTask.status) {
+    setTasks(prev => {
+      const activeIndex = prev.findIndex(t => t.id === activeId)
+      const overIndex = prev.findIndex(t => t.id === overId)
+      const updated = [...prev]
+      updated[activeIndex] = { ...updated[activeIndex], status: overTask.status }
+      return arrayMove(updated, activeIndex, overIndex)
+    })
+    return
+  }
+
+  // Reordering within same column
+  if (overTask && activeTask.status === overTask.status) {
+    setTasks(prev => {
+      const activeIndex = prev.findIndex(t => t.id === activeId)
+      const overIndex = prev.findIndex(t => t.id === overId)
+      return arrayMove(prev, activeIndex, overIndex)
+    })
+  }
+}
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
