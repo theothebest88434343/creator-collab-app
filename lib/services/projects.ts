@@ -10,7 +10,15 @@ export async function getProjects(userId: string) {
   if (error) throw error
   return data.map((d: any) => d.project)
 }
+export async function updateProject(projectId: string, name: string, description: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('projects')
+    .update({ name, description })
+    .eq('id', projectId)
 
+  if (error) throw error
+}
 export async function createProject(name: string, description: string, userId: string) {
   const supabase = createClient()
 
