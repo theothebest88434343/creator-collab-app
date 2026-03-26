@@ -8,6 +8,7 @@ import { NotificationBell } from '@/components/ui/NotificationBell'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
+  { label: '⊞  Dashboard', href: '/dashboard' },
   { label: '⊞  Projects', href: '/projects' },
 ]
 
