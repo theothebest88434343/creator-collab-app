@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { signOut } from '@/app/(auth)/actions'
 import { NotificationBell } from '@/components/ui/NotificationBell'
+import { SearchModal } from '@/components/ui/SearchModal'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
@@ -18,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [initial, setInitial] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -38,6 +40,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setInitial((name || user.email || '?')[0].toUpperCase())
     }
     load()
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   return (
@@ -66,6 +79,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             )
           })}
+
+          {/* Search button */}
+          <button
+            onClick={() => setShowSearch(true)}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
+          >
+            <span className="text-base">⌕</span>
+            <span className="flex-1 text-left">Search</span>
+            <kbd className="text-white/20 text-xs border border-white/10 rounded px-1.5 py-0.5">⌘K</kbd>
+          </button>
         </nav>
 
         {/* Bottom */}
@@ -111,6 +134,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="ml-64 flex-1 min-h-screen">
         {children}
       </main>
+
+      {showSearch && <SearchModal onClose={() => setShowSearch(false)} />}
     </div>
   )
 }
