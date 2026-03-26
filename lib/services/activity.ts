@@ -19,7 +19,7 @@ export async function getRecentActivity(projectId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('activity')
-    .select('*, user:users(full_name, email)')
+    .select('*')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
     .limit(20)
@@ -43,7 +43,7 @@ export async function getAllRecentActivity(userId: string) {
 
   const { data, error } = await supabase
     .from('activity')
-    .select('*, user:users(full_name, email), project:projects(name)')
+    .select('*, project:projects(name)')
     .in('project_id', projectIds)
     .order('created_at', { ascending: false })
     .limit(20)
