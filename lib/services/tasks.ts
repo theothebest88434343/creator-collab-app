@@ -4,7 +4,7 @@ export async function getTasks(projectId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, assignee:users(id, full_name, email)')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
 
@@ -34,6 +34,22 @@ export async function updateTaskStatus(taskId: string, status: 'todo' | 'in_prog
   const { error } = await supabase
     .from('tasks')
     .update({ status })
+    .eq('id', taskId)
+
+  if (error) throw error
+}
+
+export async function updateTask(taskId: string, updates: {
+  title?: string
+  description?: string
+  due_date?: string | null
+  assignee_id?: string | null
+  priority?: 'low' | 'medium' | 'high'
+}) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tasks')
+    .update(updates)
     .eq('id', taskId)
 
   if (error) throw error

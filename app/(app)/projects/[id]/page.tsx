@@ -20,7 +20,11 @@ import {
 type Task = {
   id: string
   title: string
+  description: string | null
   status: 'todo' | 'in_progress' | 'done'
+  due_date: string | null
+  assignee_id: string | null
+  priority: 'low' | 'medium' | 'high'
   created_at: string
 }
 
@@ -161,6 +165,7 @@ export default function ProjectPage() {
                 id={col.id}
                 title={col.title}
                 tasks={getColumnTasks(col.id)}
+                projectId={id as string}
                 onUpdated={refreshTasks}
               />
             ))}

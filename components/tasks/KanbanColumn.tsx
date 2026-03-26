@@ -7,7 +7,11 @@ import { TaskCard } from './TaskCard'
 type Task = {
   id: string
   title: string
+  description: string | null
   status: 'todo' | 'in_progress' | 'done'
+  due_date: string | null
+  assignee_id: string | null
+  priority: 'low' | 'medium' | 'high'
   created_at: string
 }
 
@@ -15,10 +19,11 @@ type Props = {
   id: string
   title: string
   tasks: Task[]
+  projectId: string
   onUpdated: () => void
 }
 
-export function KanbanColumn({ id, title, tasks, onUpdated }: Props) {
+export function KanbanColumn({ id, title, tasks, projectId, onUpdated }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
@@ -31,13 +36,11 @@ export function KanbanColumn({ id, title, tasks, onUpdated }: Props) {
       </h2>
       <div
         ref={setNodeRef}
-        className={`space-y-2 min-h-[100px] rounded-xl p-2 transition-colors ${
-          isOver ? 'bg-white/5' : ''
-        }`}
+        className={`space-y-2 min-h-[100px] rounded-xl p-2 transition-colors ${isOver ? 'bg-white/5' : ''}`}
       >
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
-            <TaskCard key={task.id} task={task} onUpdated={onUpdated} />
+            <TaskCard key={task.id} task={task} projectId={projectId} onUpdated={onUpdated} />
           ))}
         </SortableContext>
       </div>
