@@ -57,16 +57,24 @@ export async function POST(req: NextRequest) {
 
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`
 
-    // 5️⃣ Send invite email via Supabase function
-    const { error: emailError } = await supabase.functions.invoke('send-invite', {
-      body: {
-        to: email,
-        subject: `You've been invited to ${project?.name}`,
-        text: `${inviterName} has invited you to join ${project?.name}. Click here to accept: ${inviteLink}`
+    // 5️⃣ Call Edge Function directly with service role key
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-invite`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: `You've been invited to ${project?.name}`,
+          text: `${inviterName} has invited you to join ${project?.name}. Click here to accept: ${inviteLink}`,
+        }),
       }
-    })
+    )
 
-    if (emailError) {
+    if (!res.ok) {
       return NextResponse.json({ error: 'Failed to send invite email.' }, { status: 500 })
     }
 
