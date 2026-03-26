@@ -109,23 +109,24 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   if (data) setComments(data as Comment[])
 }
   async function handleAddComment(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newComment.trim()) return
-    setSubmittingComment(true)
+  e.preventDefault()
+  if (!newComment.trim()) return
+  setSubmittingComment(true)
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
 
-    await supabase.from('task_comments').insert({
-      task_id: task.id,
-      user_id: user.id,
-      content: newComment.trim(),
-    })
+  await supabase.from('task_comments').insert({
+    task_id: task.id,
+    user_id: user.id,
+    content: newComment.trim(),
+  })
 
-    setNewComment('')
-    setSubmittingComment(false)
-  }
+  setNewComment('')
+  await loadComments()
+  setSubmittingComment(false)
+}
 
   async function handleDeleteComment(commentId: string) {
     const supabase = createClient()
