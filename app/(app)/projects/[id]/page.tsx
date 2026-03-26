@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getTasks } from '@/lib/services/tasks'
+import { getTasks, createTask } from '@/lib/services/tasks'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
 import Link from 'next/link'
@@ -15,6 +15,11 @@ export default function ProjectPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const refreshTasks = useCallback(async () => {
+    const data = await getTasks(id as string)
+    setTasks(data)
+  }, [id])
 
   useEffect(() => {
     async function load() {
@@ -37,10 +42,55 @@ export default function ProjectPage() {
     load()
   }, [id])
 
-  async function refreshTasks() {
-    const tasks = await getTasks(id as string)
-    setTasks(tasks)
-  }
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel(`tasks:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${id}`
+        },
+        (payload) => {
+          setTasks(prev => [payload.new, ...prev])
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${id}`
+        },
+        (payload) => {
+          setTasks(prev =>
+            prev.map(task => task.id === payload.new.id ? payload.new : task)
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'tasks',
+          filter: `project_id=eq.${id}`
+        },
+        (payload) => {
+          setTasks(prev => prev.filter(task => task.id !== payload.old.id))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [id])
 
   if (loading) return <div className="p-8 text-white/40 text-sm">Loading...</div>
   if (!project) return <div className="p-8 text-white/40 text-sm">Project not found.</div>
