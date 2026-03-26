@@ -4,7 +4,7 @@ export async function getTasks(projectId: string) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('tasks')
-    .select('*, assignee:users(id, full_name, email)')
+    .select('*, assignee:users!tasks_assignee_id_fkey(id, full_name, email)')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
 

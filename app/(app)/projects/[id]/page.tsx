@@ -68,9 +68,13 @@ export default function ProjectPage() {
         .single()
       setProject(project)
 
-      const tasks = await getTasks(id as string)
-      setTasks(tasks)
-      setLoading(false)
+      try {
+        const tasks = await getTasks(id as string)
+        setTasks(tasks)
+        } catch (err) {
+        console.error('getTasks error:', err)
+        }
+        setLoading(false)
     }
     load()
   }, [id])
