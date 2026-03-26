@@ -12,6 +12,7 @@ type Task = {
   status: 'todo' | 'in_progress' | 'done'
   due_date: string | null
   assignee_id: string | null
+  assignee?: { id: string; full_name: string; email: string } | null
   priority: 'low' | 'medium' | 'high'
   created_at: string
 }
@@ -46,6 +47,10 @@ export function TaskCard({ task, projectId, onUpdated }: Props) {
     opacity: isDragging ? 0.4 : 1,
   }
 
+  const assigneeInitial = task.assignee
+    ? (task.assignee.full_name || task.assignee.email || '?')[0].toUpperCase()
+    : null
+
   return (
     <>
       <div
@@ -75,25 +80,33 @@ export function TaskCard({ task, projectId, onUpdated }: Props) {
                 </span>
               )}
               {task.due_date && (() => {
-  const due = new Date(task.due_date!)
-  const now = new Date()
-  const isOverdue = due < now && task.status !== 'done'
-  const isDueSoon = !isOverdue && due.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 2
+                const due = new Date(task.due_date!)
+                const now = new Date()
+                const isOverdue = due < now && task.status !== 'done'
+                const isDueSoon = !isOverdue && due.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 2
 
-  return (
-    <span className={`text-xs px-1.5 py-0.5 rounded-md ${
-      isOverdue
-        ? 'bg-red-400/10 text-red-400'
-        : isDueSoon
-        ? 'bg-yellow-400/10 text-yellow-400'
-        : 'text-white/30'
-    }`}>
-      {isOverdue ? '⚠ ' : ''}{due.toLocaleDateString()}
-    </span>
-  )
-})()}
+                return (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md ${
+                    isOverdue
+                      ? 'bg-red-400/10 text-red-400'
+                      : isDueSoon
+                      ? 'bg-yellow-400/10 text-yellow-400'
+                      : 'text-white/30'
+                  }`}>
+                    {isOverdue ? '⚠ ' : ''}{due.toLocaleDateString()}
+                  </span>
+                )
+              })()}
             </div>
           </div>
+          {assigneeInitial && (
+            <div
+              className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white/60 flex-shrink-0"
+              title={task.assignee?.full_name || task.assignee?.email}
+            >
+              {assigneeInitial}
+            </div>
+          )}
         </div>
       </div>
 

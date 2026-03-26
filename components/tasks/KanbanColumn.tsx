@@ -11,6 +11,7 @@ type Task = {
   status: 'todo' | 'in_progress' | 'done'
   due_date: string | null
   assignee_id: string | null
+  assignee?: { id: string; full_name: string; email: string } | null
   priority: 'low' | 'medium' | 'high'
   created_at: string
 }
