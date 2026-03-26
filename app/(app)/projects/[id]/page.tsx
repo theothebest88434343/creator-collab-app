@@ -15,6 +15,7 @@ import {
   DragOverEvent,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
@@ -50,10 +51,13 @@ export default function ProjectPage() {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
-  )
+  useSensor(PointerSensor, {
+    activationConstraint: { distance: 5 },
+  }),
+  useSensor(TouchSensor, {
+    activationConstraint: { delay: 250, tolerance: 5 },
+  })
+)
 
   const refreshTasks = useCallback(async () => {
     const data = await getTasks(id as string)
