@@ -11,12 +11,14 @@ import Link from 'next/link'
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
   DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
   closestCorners,
 } from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
 
 type Task = {
   id: string
@@ -72,10 +74,10 @@ export default function ProjectPage() {
       try {
         const tasks = await getTasks(id as string)
         setTasks(tasks)
-        } catch (err) {
+      } catch (err) {
         console.error('getTasks error:', err)
-        }
-        setLoading(false)
+      }
+      setLoading(false)
     }
     load()
   }, [id])
@@ -96,6 +98,51 @@ export default function ProjectPage() {
     return () => { supabase.removeChannel(channel) }
   }, [id])
 
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    if (activeId === overId) return
+
+    const activeTask = tasks.find(t => t.id === activeId)
+    const overTask = tasks.find(t => t.id === overId)
+    const overColumn = COLUMNS.find(c => c.id === overId)
+
+    if (!activeTask) return
+
+    // Dragging over a different column's task
+    if (overTask && activeTask.status !== overTask.status) {
+      setTasks(prev => {
+        const activeIndex = prev.findIndex(t => t.id === activeId)
+        const overIndex = prev.findIndex(t => t.id === overId)
+        const updated = [...prev]
+        updated[activeIndex] = { ...updated[activeIndex], status: overTask.status }
+        return arrayMove(updated, activeIndex, overIndex)
+      })
+      return
+    }
+
+    // Dragging over a column directly
+    if (overColumn && activeTask.status !== overColumn.id) {
+      setTasks(prev => prev.map(t =>
+        t.id === activeId ? { ...t, status: overColumn.id as Task['status'] } : t
+      ))
+      return
+    }
+
+    // Reordering within same column
+    if (overTask && activeTask.status === overTask.status) {
+      setTasks(prev => {
+        const activeIndex = prev.findIndex(t => t.id === activeId)
+        const overIndex = prev.findIndex(t => t.id === overId)
+        return arrayMove(prev, activeIndex, overIndex)
+      })
+    }
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveTask(null)
@@ -105,42 +152,39 @@ export default function ProjectPage() {
     const draggedTask = tasks.find(t => t.id === active.id)
     if (!draggedTask) return
 
-    // over.id could be a column id or a task id
     const overId = over.id as string
     const newStatus = COLUMNS.find(c => c.id === overId)?.id
       ?? tasks.find(t => t.id === overId)?.status
 
-    if (!newStatus || newStatus === draggedTask.status) return
+    if (!newStatus) return
 
-    // Optimistic update
-    setTasks(prev =>
-      prev.map(t => t.id === draggedTask.id ? { ...t, status: newStatus as Task['status'] } : t)
-    )
-
-    await updateTaskStatus(draggedTask.id, newStatus as Task['status'])
+    if (newStatus !== draggedTask.status) {
+      await updateTaskStatus(draggedTask.id, newStatus as Task['status'])
+    }
   }
 
   if (loading) return (
-  <div className="min-h-screen bg-[#0f0f0f]">
-    <div className="max-w-5xl mx-auto px-6 py-8">
-      <div className="mb-8 space-y-2">
-        <Skeleton className="h-3 w-24" />
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-3 w-32" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-4 w-20 mb-3" />
-            {[...Array(3)].map((_, j) => (
-              <Skeleton key={j} className="h-12 w-full" />
-            ))}
-          </div>
-        ))}
+    <div className="min-h-screen bg-[#0f0f0f]">
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="mb-8 space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-20 mb-3" />
+              {[...Array(3)].map((_, j) => (
+                <Skeleton key={j} className="h-12 w-full" />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
+
   if (!project) return <div className="p-8 text-white/40 text-sm">Project not found.</div>
 
   const getColumnTasks = (status: string) => tasks.filter(t => t.status === status)
@@ -181,6 +225,7 @@ export default function ProjectPage() {
             const task = tasks.find(t => t.id === active.id)
             if (task) setActiveTask(task)
           }}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
