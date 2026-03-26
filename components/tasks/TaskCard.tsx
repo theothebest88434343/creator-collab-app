@@ -1,4 +1,8 @@
-import { updateTaskStatus, deleteTask } from '@/lib/services/tasks'
+'use client'
+
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { deleteTask } from '@/lib/services/tasks'
 
 type Task = {
   id: string
@@ -13,9 +17,19 @@ type Props = {
 }
 
 export function TaskCard({ task, onUpdated }: Props) {
-  async function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    await updateTaskStatus(task.id, e.target.value as any)
-    onUpdated()
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
   }
 
   async function handleDelete() {
@@ -25,28 +39,29 @@ export function TaskCard({ task, onUpdated }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-between bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all group">
-      <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-white/20' : 'text-white/80'}`}>
-        {task.title}
-      </span>
-      <div className="flex items-center gap-2">
-        <select
-          value={task.status}
-          onChange={handleStatusChange}
-          style={{ backgroundColor: '#2a2a2a', color: '#fff' }}
-          className="text-xs border border-white/10 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-white/20"
-        >
-          <option value="todo" style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>To do</option>
-          <option value="in_progress" style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>In progress</option>
-          <option value="done" style={{ backgroundColor: '#2a2a2a', color: '#fff' }}>Done</option>
-        </select>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all group"
+    >
+      <div className="flex items-center gap-2 flex-1">
         <button
-          onClick={handleDelete}
-          className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-xs"
+          {...attributes}
+          {...listeners}
+          className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing transition-colors"
         >
-          ✕
+          ⠿
         </button>
+        <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-white/20' : 'text-white/80'}`}>
+          {task.title}
+        </span>
       </div>
+      <button
+        onClick={handleDelete}
+        className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-xs ml-2"
+      >
+        ✕
+      </button>
     </div>
   )
 }

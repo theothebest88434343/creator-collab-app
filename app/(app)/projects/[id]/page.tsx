@@ -3,18 +3,47 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getTasks, createTask } from '@/lib/services/tasks'
-import { TaskCard } from '@/components/tasks/TaskCard'
+import { getTasks, updateTaskStatus } from '@/lib/services/tasks'
+import { KanbanColumn } from '@/components/tasks/KanbanColumn'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
 import Link from 'next/link'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from '@dnd-kit/core'
+
+type Task = {
+  id: string
+  title: string
+  status: 'todo' | 'in_progress' | 'done'
+  created_at: string
+}
+
+const COLUMNS = [
+  { id: 'todo', title: 'To do' },
+  { id: 'in_progress', title: 'In progress' },
+  { id: 'done', title: 'Done' },
+]
 
 export default function ProjectPage() {
   const { id } = useParams()
   const [project, setProject] = useState<any>(null)
-  const [tasks, setTasks] = useState<any[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  )
 
   const refreshTasks = useCallback(async () => {
     const data = await getTasks(id as string)
@@ -47,57 +76,45 @@ export default function ProjectPage() {
 
     const channel = supabase
       .channel(`tasks:${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'tasks',
-          filter: `project_id=eq.${id}`
-        },
-        (payload) => {
-          setTasks(prev => [payload.new, ...prev])
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tasks',
-          filter: `project_id=eq.${id}`
-        },
-        (payload) => {
-          setTasks(prev =>
-            prev.map(task => task.id === payload.new.id ? payload.new : task)
-          )
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'tasks',
-          filter: `project_id=eq.${id}`
-        },
-        (payload) => {
-          setTasks(prev => prev.filter(task => task.id !== payload.old.id))
-        }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
+        (payload) => setTasks(prev => [payload.new as Task, ...prev]))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
+        (payload) => setTasks(prev => prev.map(task => task.id === payload.new.id ? payload.new as Task : task)))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
+        (payload) => setTasks(prev => prev.filter(task => task.id !== payload.old.id)))
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [id])
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveTask(null)
+
+    if (!over) return
+
+    const draggedTask = tasks.find(t => t.id === active.id)
+    if (!draggedTask) return
+
+    // over.id could be a column id or a task id
+    const overId = over.id as string
+    const newStatus = COLUMNS.find(c => c.id === overId)?.id
+      ?? tasks.find(t => t.id === overId)?.status
+
+    if (!newStatus || newStatus === draggedTask.status) return
+
+    // Optimistic update
+    setTasks(prev =>
+      prev.map(t => t.id === draggedTask.id ? { ...t, status: newStatus as Task['status'] } : t)
+    )
+
+    await updateTaskStatus(draggedTask.id, newStatus as Task['status'])
+  }
 
   if (loading) return <div className="p-8 text-white/40 text-sm">Loading...</div>
   if (!project) return <div className="p-8 text-white/40 text-sm">Project not found.</div>
 
-  const todo = tasks.filter(t => t.status === 'todo')
-  const inProgress = tasks.filter(t => t.status === 'in_progress')
-  const done = tasks.filter(t => t.status === 'done')
+  const getColumnTasks = (status: string) => tasks.filter(t => t.status === status)
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -113,16 +130,10 @@ export default function ProjectPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href={`/projects/${id}/files`}
-              className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors"
-            >
+            <Link href={`/projects/${id}/files`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
               Files
             </Link>
-            <Link
-              href={`/projects/${id}/members`}
-              className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors"
-            >
+            <Link href={`/projects/${id}/members`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
               Members
             </Link>
             <button
@@ -134,40 +145,35 @@ export default function ProjectPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <h2 className="text-xs font-medium text-white/30 uppercase tracking-wide mb-3 flex items-center gap-2">
-              To do <span className="bg-white/10 text-white/50 rounded-full px-2 py-0.5 text-xs">{todo.length}</span>
-            </h2>
-            <div className="space-y-2">
-              {todo.map(task => (
-                <TaskCard key={task.id} task={task} onUpdated={refreshTasks} />
-              ))}
-            </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={({ active }) => {
+            const task = tasks.find(t => t.id === active.id)
+            if (task) setActiveTask(task)
+          }}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {COLUMNS.map(col => (
+              <KanbanColumn
+                key={col.id}
+                id={col.id}
+                title={col.title}
+                tasks={getColumnTasks(col.id)}
+                onUpdated={refreshTasks}
+              />
+            ))}
           </div>
 
-          <div>
-            <h2 className="text-xs font-medium text-white/30 uppercase tracking-wide mb-3 flex items-center gap-2">
-              In progress <span className="bg-white/10 text-white/50 rounded-full px-2 py-0.5 text-xs">{inProgress.length}</span>
-            </h2>
-            <div className="space-y-2">
-              {inProgress.map(task => (
-                <TaskCard key={task.id} task={task} onUpdated={refreshTasks} />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xs font-medium text-white/30 uppercase tracking-wide mb-3 flex items-center gap-2">
-              Done <span className="bg-white/10 text-white/50 rounded-full px-2 py-0.5 text-xs">{done.length}</span>
-            </h2>
-            <div className="space-y-2">
-              {done.map(task => (
-                <TaskCard key={task.id} task={task} onUpdated={refreshTasks} />
-              ))}
-            </div>
-          </div>
-        </div>
+          <DragOverlay>
+            {activeTask ? (
+              <div className="bg-[#1a1a1a] rounded-xl border border-white/10 px-4 py-3 text-sm text-white/80 shadow-xl">
+                {activeTask.title}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {showModal && userId && (
