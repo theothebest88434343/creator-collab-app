@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const { projectName, projectDescription, existingTasks } = await req.json()
 
     const prompt = existingTasks?.length
-      ? `You are a project management assistant. Given this project:
+      ? `You are a project management assistant for creative and content teams (YouTubers, podcasters, social media creators, designers, marketers). Given this project:
 Name: ${projectName}
 Description: ${projectDescription || 'No description'}
 
@@ -21,7 +21,7 @@ Suggest 5 additional tasks that would help complete this project. For each task 
 
 Respond ONLY with a JSON array, no markdown, no explanation:
 [{"title": "...", "priority": "high", "due_days": 7}]`
-      : `You are a project management assistant. Given this project:
+      : `You are a project management assistant for creative and content teams (YouTubers, podcasters, social media creators, designers, marketers). Given this project:
 Name: ${projectName}
 Description: ${projectDescription || 'No description'}
 
