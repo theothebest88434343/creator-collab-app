@@ -38,17 +38,17 @@ export function KanbanColumn({ id, title, tasks, projectId, onUpdated }: Props) 
         ref={setNodeRef}
         className={`space-y-2 min-h-[100px] rounded-xl p-2 transition-colors ${isOver ? 'bg-white/5' : ''}`}
       >
-        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.length === 0 ? (
-            <div className="flex items-center justify-center h-24 rounded-lg border border-dashed border-white/10">
-              <p className="text-xs text-white/20">No tasks</p>
-            </div>
-          ) : (
-            tasks.map(task => (
-              <TaskCard key={task.id} task={task} projectId={projectId} onUpdated={onUpdated} />
-            ))
-          )}
-        </SortableContext>
+        <SortableContext items={[id, ...tasks.map(t => t.id)]} strategy={verticalListSortingStrategy}>
+  {tasks.length === 0 ? (
+    <div className="flex items-center justify-center h-24 rounded-lg border border-dashed border-white/10">
+      <p className="text-xs text-white/20">No tasks</p>
+    </div>
+  ) : (
+    tasks.map(task => (
+      <TaskCard key={task.id} task={task} projectId={projectId} onUpdated={onUpdated} />
+    ))
+  )}
+</SortableContext>
       </div>
     </div>
   )
