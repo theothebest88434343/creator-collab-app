@@ -25,7 +25,7 @@ Respond ONLY with a JSON array, no markdown, no explanation:
 Name: ${projectName}
 Description: ${projectDescription || 'No description'}
 
-Suggest 6 tasks to get this project started. For each task provide a title, priority (low/medium/high), and suggested due date (as days from today).
+Suggest 6 tasks to get this project started. For each task provide a title, priority (low/medium/high), and suggested due date (as days from today.
 
 Respond ONLY with a JSON array, no markdown, no explanation:
 [{"title": "...", "priority": "high", "due_days": 7}]`
@@ -43,12 +43,19 @@ Respond ONLY with a JSON array, no markdown, no explanation:
     )
 
     const data = await response.json()
+
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      console.error('Gemini response:', JSON.stringify(data))
+      return NextResponse.json({ error: 'No response from AI. Check your API key.' }, { status: 500 })
+    }
+
     const text = data.candidates[0].content.parts[0].text.trim()
     const clean = text.replace(/```json|```/g, '').trim()
     const tasks = JSON.parse(clean)
 
     return NextResponse.json({ tasks })
   } catch (err: any) {
+    console.error('AI suggest error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
