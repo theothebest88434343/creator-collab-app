@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
     })
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to send invite email.' }, { status: 500 })
+      const errorData = await res.json()
+      return NextResponse.json({ error: errorData.message || 'Failed to send invite email.' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

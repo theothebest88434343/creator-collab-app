@@ -57,17 +57,24 @@ export async function POST(req: NextRequest) {
 
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`
 
-    // 5️⃣ Send invite email via Supabase function
-    const { error: emailError } = await supabase.functions.invoke('send-invite', {
-      body: {
+    // 5️⃣ Call Resend directly
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'onboarding@resend.dev',
         to: email,
         subject: `You've been invited to ${project?.name}`,
-        text: `${inviterName} has invited you to join ${project?.name}. Click here to accept: ${inviteLink}`
-      }
+        text: `${inviterName} has invited you to join ${project?.name}. Click here to accept: ${inviteLink}`,
+      }),
     })
 
-    if (emailError) {
-      return NextResponse.json({ error: 'Failed to send invite email.' }, { status: 500 })
+    if (!res.ok) {
+      const errorData = await res.json()
+      return NextResponse.json({ error: errorData.message || 'Failed to send invite email.' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
