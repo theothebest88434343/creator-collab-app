@@ -74,11 +74,24 @@ export function TaskCard({ task, projectId, onUpdated }: Props) {
                   {task.priority}
                 </span>
               )}
-              {task.due_date && (
-                <span className="text-xs text-white/30">
-                  {new Date(task.due_date).toLocaleDateString()}
-                </span>
-              )}
+              {task.due_date && (() => {
+  const due = new Date(task.due_date!)
+  const now = new Date()
+  const isOverdue = due < now && task.status !== 'done'
+  const isDueSoon = !isOverdue && due.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 2
+
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded-md ${
+      isOverdue
+        ? 'bg-red-400/10 text-red-400'
+        : isDueSoon
+        ? 'bg-yellow-400/10 text-yellow-400'
+        : 'text-white/30'
+    }`}>
+      {isOverdue ? '⚠ ' : ''}{due.toLocaleDateString()}
+    </span>
+  )
+})()}
             </div>
           </div>
         </div>
