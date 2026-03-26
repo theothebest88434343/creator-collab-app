@@ -77,6 +77,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorData.message || 'Failed to send invite email.' }, { status: 500 })
     }
 
+    // 6️⃣ Notify the invitee if they already have an account
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (existingUser) {
+      await supabase.from('notifications').insert({
+        user_id: existingUser.id,
+        type: 'project_added',
+        message: `${inviterName} added you to ${project?.name}`,
+        project_id: projectId,
+      })
+    }
+
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

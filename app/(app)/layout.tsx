@@ -1,8 +1,11 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { signOut } from '@/app/(auth)/actions'
+import { NotificationBell } from '@/components/ui/NotificationBell'
+import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
   { label: 'Projects', href: '/projects' },
@@ -10,17 +13,24 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+    }
+    load()
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-[#0f0f0f]">
-      {/* Sidebar */}
       <aside className="w-64 fixed top-0 left-0 h-screen bg-[#141414] border-r border-white/5 flex flex-col">
-        {/* Logo */}
         <div className="px-6 py-5 border-b border-white/5">
           <span className="text-white font-semibold text-lg tracking-tight">Collab.</span>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map(item => {
             const active = pathname.startsWith(item.href)
@@ -41,8 +51,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Bottom */}
-        <div className="px-3 py-4 border-t border-white/5">
+        <div className="px-3 py-4 border-t border-white/5 space-y-0.5">
+          {userId && <NotificationBell userId={userId} />}
           <button
             onClick={() => signOut()}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
@@ -53,7 +63,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="ml-64 flex-1 min-h-screen">
         {children}
       </main>
