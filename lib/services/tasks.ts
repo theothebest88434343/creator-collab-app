@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { createNotification } from './notifications'
+import { createNotification } from '@/lib/services/notifications'
 
 export async function getTasks(projectId: string) {
   const supabase = createClient()
