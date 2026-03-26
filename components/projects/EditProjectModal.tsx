@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { updateProject } from '@/lib/services/projects'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 
 type Props = {
   project: { id: string; name: string; description: string | null }
@@ -41,14 +40,16 @@ export function EditProjectModal({ project, onUpdated, onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            id="name"
-            label="Project name"
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-          />
+          <div>
+            <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Project name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+              className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30"
+            />
+          </div>
           <div>
             <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Description</label>
             <textarea
@@ -61,7 +62,7 @@ export function EditProjectModal({ project, onUpdated, onClose }: Props) {
           </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-red-900/30 px-3 py-2 text-sm text-red-400">{error}</p>
           )}
 
           <div className="flex gap-3 pt-2">
