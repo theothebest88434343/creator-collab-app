@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getTasks, updateTaskStatus } from '@/lib/services/tasks'
 import { KanbanColumn } from '@/components/tasks/KanbanColumn'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
+import { AISuggestModal } from '@/components/tasks/AISuggestModal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Link from 'next/link'
 import {
@@ -44,6 +45,7 @@ export default function ProjectPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
@@ -100,57 +102,54 @@ export default function ProjectPage() {
   }, [id])
 
   function handleDragOver(event: DragOverEvent) {
-  const { active, over } = event
-  if (!over) return
+    const { active, over } = event
+    if (!over) return
 
-  const activeId = active.id as string
-  const overId = over.id as string
+    const activeId = active.id as string
+    const overId = over.id as string
 
-  if (activeId === overId) return
+    if (activeId === overId) return
 
-  const activeTask = tasks.find(t => t.id === activeId)
-  if (!activeTask) return
+    const activeTask = tasks.find(t => t.id === activeId)
+    if (!activeTask) return
 
-  const overTask = tasks.find(t => t.id === overId)
-  const overColumn = COLUMNS.find(c => c.id === overId)
+    const overTask = tasks.find(t => t.id === overId)
+    const overColumn = COLUMNS.find(c => c.id === overId)
 
-  // Dragging over a column directly — move to top of that column
-  if (overColumn) {
-    setTasks(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId)
-      const firstTaskInColumn = prev.find(t => t.status === overColumn.id)
-      const targetIndex = firstTaskInColumn
-        ? prev.findIndex(t => t.id === firstTaskInColumn.id)
-        : prev.length
+    if (overColumn) {
+      setTasks(prev => {
+        const activeIndex = prev.findIndex(t => t.id === activeId)
+        const firstTaskInColumn = prev.find(t => t.status === overColumn.id)
+        const targetIndex = firstTaskInColumn
+          ? prev.findIndex(t => t.id === firstTaskInColumn.id)
+          : prev.length
 
-      const updated = [...prev]
-      updated[activeIndex] = { ...updated[activeIndex], status: overColumn.id as Task['status'] }
-      return arrayMove(updated, activeIndex, targetIndex)
-    })
-    return
+        const updated = [...prev]
+        updated[activeIndex] = { ...updated[activeIndex], status: overColumn.id as Task['status'] }
+        return arrayMove(updated, activeIndex, targetIndex)
+      })
+      return
+    }
+
+    if (overTask && activeTask.status !== overTask.status) {
+      setTasks(prev => {
+        const activeIndex = prev.findIndex(t => t.id === activeId)
+        const overIndex = prev.findIndex(t => t.id === overId)
+        const updated = [...prev]
+        updated[activeIndex] = { ...updated[activeIndex], status: overTask.status }
+        return arrayMove(updated, activeIndex, overIndex)
+      })
+      return
+    }
+
+    if (overTask && activeTask.status === overTask.status) {
+      setTasks(prev => {
+        const activeIndex = prev.findIndex(t => t.id === activeId)
+        const overIndex = prev.findIndex(t => t.id === overId)
+        return arrayMove(prev, activeIndex, overIndex)
+      })
+    }
   }
-
-  // Dragging over a task in a different column
-  if (overTask && activeTask.status !== overTask.status) {
-    setTasks(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId)
-      const overIndex = prev.findIndex(t => t.id === overId)
-      const updated = [...prev]
-      updated[activeIndex] = { ...updated[activeIndex], status: overTask.status }
-      return arrayMove(updated, activeIndex, overIndex)
-    })
-    return
-  }
-
-  // Reordering within same column
-  if (overTask && activeTask.status === overTask.status) {
-    setTasks(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId)
-      const overIndex = prev.findIndex(t => t.id === overId)
-      return arrayMove(prev, activeIndex, overIndex)
-    })
-  }
-}
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -219,6 +218,12 @@ export default function ProjectPage() {
               Members
             </Link>
             <button
+              onClick={() => setShowAIModal(true)}
+              className="rounded-lg bg-white/5 border border-white/10 text-white/60 px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              ✨ AI suggest
+            </button>
+            <button
               onClick={() => setShowModal(true)}
               className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors"
             >
@@ -266,6 +271,18 @@ export default function ProjectPage() {
           userId={userId}
           onCreated={refreshTasks}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {showAIModal && userId && (
+        <AISuggestModal
+          projectId={id as string}
+          projectName={project.name}
+          projectDescription={project.description}
+          userId={userId}
+          existingTasks={tasks.map(t => t.title)}
+          onCreated={refreshTasks}
+          onClose={() => setShowAIModal(false)}
         />
       )}
     </div>

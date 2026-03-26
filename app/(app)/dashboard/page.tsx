@@ -66,11 +66,10 @@ export default function DashboardPage() {
 
       // Get recent projects
       const { data: memberships } = await supabase
-        .from('project_members')
-        .select('project:projects(*)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(4)
+  .from('project_members')
+  .select('project:projects(*)')
+  .eq('user_id', user.id)
+  .limit(4)
       setRecentProjects((memberships || []).map((m: any) => m.project))
 
       // Get recent activity
@@ -111,15 +110,11 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-white">
-            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {userName} 👋
-          </h1>
-          <p className="text-white/40 text-sm mt-1">
-            {myTasks.length === 0
-              ? 'You have no open tasks assigned to you.'
-              : `You have ${myTasks.length} open task${myTasks.length > 1 ? 's' : ''} assigned to you.`}
-          </p>
-        </div>
+  <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+  <p className="text-white/40 text-sm mt-1">
+    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+  </p>
+</div>
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-4 mb-8">
