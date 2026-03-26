@@ -73,8 +73,14 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
         schema: 'public',
         table: 'task_comments',
         filter: `task_id=eq.${task.id}`
-      }, (payload) => {
-  setComments(prev => [...prev, payload.new as Comment])
+      }, async (payload) => {
+  const supabase = createClient()
+  const { data: user } = await supabase
+    .from('users')
+    .select('full_name, email')
+    .eq('id', payload.new.user_id)
+    .single()
+  setComments(prev => [...prev, { ...payload.new, user } as Comment])
 })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -97,7 +103,7 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   const supabase = createClient()
   const { data } = await supabase
     .from('task_comments')
-    .select('*')
+    .select('*, user:users!task_comments_user_id_fkey(full_name, email)')
     .eq('task_id', task.id)
     .order('created_at', { ascending: true })
   if (data) setComments(data as Comment[])
