@@ -7,6 +7,7 @@ import { getTasks, updateTaskStatus } from '@/lib/services/tasks'
 import { KanbanColumn } from '@/components/tasks/KanbanColumn'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
 import { AISuggestModal } from '@/components/tasks/AISuggestModal'
+import { PresenceAvatars } from '@/components/tasks/PresenceAvatars'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Link from 'next/link'
 import {
@@ -218,7 +219,8 @@ export default function ProjectPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Link href={`/projects/${id}/files`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
+  {userId && <PresenceAvatars projectId={id as string} currentUserId={userId} />}
+  <Link href={`/projects/${id}/files`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
               Files
             </Link>
             <Link href={`/projects/${id}/members`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
