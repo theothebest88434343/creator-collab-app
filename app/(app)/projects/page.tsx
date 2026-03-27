@@ -29,16 +29,16 @@ function ProjectsPage() {
       setProjects(data)
       setLoading(false)
 
-      if (data.length === 0) {
-        setShowOnboarding(true)
-      }
+      if (data.length === 0 && !searchParams.get('ai') && !searchParams.get('new')) {
+  setShowOnboarding(true)
+}
 
-      if (searchParams.get('ai') === 'true') {
-        setShowAIModal(true)
-      }
-      if (searchParams.get('new') === 'true') {
-        setShowModal(true)
-      }
+if (searchParams.get('ai') === 'true') {
+  setShowAIModal(true)
+}
+if (searchParams.get('new') === 'true') {
+  setShowModal(true)
+}
     }
     load()
   }, [])
