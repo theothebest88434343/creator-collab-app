@@ -48,7 +48,6 @@ function timeAgo(date: string) {
 
 export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
-  const [userName, setUserName] = useState('')
   const [myTasks, setMyTasks] = useState<Task[]>([])
   const [allTasks, setAllTasks] = useState<Task[]>([])
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
@@ -85,13 +84,6 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setUserId(user.id)
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-      setUserName(profile?.full_name || user.email?.split('@')[0] || 'there')
 
       const { data: memberships } = await supabase
         .from('project_members')
@@ -176,7 +168,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
           <p className="text-white/40 text-sm mt-1">
@@ -184,27 +176,29 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4">
-            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">My open tasks</p>
-            <p className="text-2xl font-semibold text-white">{myTasks.length}</p>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-3 sm:p-4">
+            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">My tasks</p>
+            <p className="text-xl sm:text-2xl font-semibold text-white">{myTasks.length}</p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4">
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-3 sm:p-4">
             <p className="text-xs text-white/30 uppercase tracking-wide mb-1">Overdue</p>
-            <p className={`text-2xl font-semibold ${overdueTasks.length > 0 ? 'text-red-400' : 'text-white'}`}>
+            <p className={`text-xl sm:text-2xl font-semibold ${overdueTasks.length > 0 ? 'text-red-400' : 'text-white'}`}>
               {overdueTasks.length}
             </p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4">
-            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">Unassigned tasks</p>
-            <p className={`text-2xl font-semibold ${allTasks.length > 0 ? 'text-yellow-400' : 'text-white'}`}>
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-3 sm:p-4">
+            <p className="text-xs text-white/30 uppercase tracking-wide mb-1">Unassigned</p>
+            <p className={`text-xl sm:text-2xl font-semibold ${allTasks.length > 0 ? 'text-yellow-400' : 'text-white'}`}>
               {allTasks.length}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
+        {/* Main content — stacks on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="sm:col-span-2 space-y-6">
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">My tasks</h2>
               {myTasks.length === 0 ? (
@@ -257,6 +251,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Activity feed */}
           <div>
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Recent activity</h2>
             {activity.length === 0 ? (
