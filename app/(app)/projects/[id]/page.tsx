@@ -98,7 +98,11 @@ export default function ProjectPage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
         (payload) => setTasks(prev => [payload.new as Task, ...prev]))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
-        (payload) => setTasks(prev => prev.map(task => task.id === payload.new.id ? payload.new as Task : task)))
+  (payload) => setTasks(prev => prev.map(task =>
+    task.id === payload.new.id
+      ? { ...payload.new, assignee: task.assignee } as Task
+      : task
+  )))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
         (payload) => setTasks(prev => prev.filter(task => task.id !== payload.old.id)))
       .subscribe()
