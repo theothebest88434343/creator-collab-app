@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { inviteMember } from '@/lib/services/members' // import your service
+import { inviteMember } from '@/lib/services/members'
 
 type Props = {
   projectId: string
@@ -22,13 +21,8 @@ export function InviteModal({ projectId, onInvited, onClose }: Props) {
     setError(null)
 
     try {
-      // Call the service directly
       await inviteMember(projectId, email)
-
-      // Refresh the member list
       onInvited()
-
-      // Close the modal
       onClose()
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -37,30 +31,36 @@ export function InviteModal({ projectId, onInvited, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Invite collaborator</h2>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+      <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 w-full max-w-md">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-white">Invite collaborator</h2>
+          <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors text-xl">✕</button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            id="email"
-            label="Email address"
-            type="email"
-            placeholder="teammate@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
+          <div>
+            <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Email address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="teammate@example.com"
+              required
+              autoFocus
+              className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 placeholder-white/20"
+            />
+          </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-red-900/30 px-3 py-2 text-sm text-red-400">{error}</p>
           )}
 
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white transition-colors"
             >
               Cancel
             </button>
