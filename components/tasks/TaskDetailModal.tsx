@@ -54,6 +54,7 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserName, setCurrentUserName] = useState('')
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -61,11 +62,17 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
     loadComments()
 
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id)
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      setCurrentUserId(user.id)
+      const { data: profile } = await supabase
+        .from('users')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single()
+      setCurrentUserName(profile?.full_name || profile?.email || 'You')
     })
 
-    // Real-time comments
     const channel = supabase
       .channel(`comments:${task.id}`)
       .on('postgres_changes', {
@@ -74,14 +81,17 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
         table: 'task_comments',
         filter: `task_id=eq.${task.id}`
       }, async (payload) => {
-  const supabase = createClient()
-  const { data: user } = await supabase
-    .from('users')
-    .select('full_name, email')
-    .eq('id', payload.new.user_id)
-    .single()
-  setComments(prev => [...prev, { ...payload.new, user } as Comment])
-})
+        const { data: user } = await supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('id', payload.new.user_id)
+          .single()
+        setComments(prev => {
+          // Avoid duplicates
+          if (prev.find(c => c.id === payload.new.id)) return prev
+          return [...prev, { ...payload.new, user } as Comment]
+        })
+      })
       .on('postgres_changes', {
         event: 'DELETE',
         schema: 'public',
@@ -100,33 +110,47 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   }, [comments])
 
   async function loadComments() {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('task_comments')
-    .select('*')
-    .eq('task_id', task.id)
-    .order('created_at', { ascending: true })
-  if (data) setComments(data as Comment[])
-}
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('task_comments')
+      .select('*')
+      .eq('task_id', task.id)
+      .order('created_at', { ascending: true })
+
+    if (!data) return
+
+    // Fetch user names for each comment
+    const commentsWithUsers = await Promise.all(
+      data.map(async comment => {
+        const { data: user } = await supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('id', comment.user_id)
+          .single()
+        return { ...comment, user }
+      })
+    )
+    setComments(commentsWithUsers as Comment[])
+  }
+
   async function handleAddComment(e: React.FormEvent) {
-  e.preventDefault()
-  if (!newComment.trim()) return
-  setSubmittingComment(true)
+    e.preventDefault()
+    if (!newComment.trim()) return
+    setSubmittingComment(true)
 
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-  await supabase.from('task_comments').insert({
-    task_id: task.id,
-    user_id: user.id,
-    content: newComment.trim(),
-  })
+    await supabase.from('task_comments').insert({
+      task_id: task.id,
+      user_id: user.id,
+      content: newComment.trim(),
+    })
 
-  setNewComment('')
-  await loadComments()
-  setSubmittingComment(false)
-}
+    setNewComment('')
+    setSubmittingComment(false)
+  }
 
   async function handleDeleteComment(commentId: string) {
     const supabase = createClient()
@@ -157,16 +181,13 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
       <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-white font-semibold text-lg">Task details</h2>
           <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors text-xl">✕</button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left — task details */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 border-r border-white/10">
-            {/* Title */}
             <div>
               <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Title</label>
               <input
@@ -176,7 +197,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               />
             </div>
 
-            {/* Description */}
             <div>
               <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Description</label>
               <textarea
@@ -189,7 +209,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Priority */}
               <div>
                 <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Priority</label>
                 <select
@@ -203,7 +222,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
                 </select>
               </div>
 
-              {/* Due date */}
               <div>
                 <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Due date</label>
                 <input
@@ -215,7 +233,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               </div>
             </div>
 
-            {/* Assignee */}
             <div>
               <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Assignee</label>
               <select
@@ -230,19 +247,12 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               </select>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between pt-2">
-              <button
-                onClick={handleDelete}
-                className="text-red-400 hover:text-red-300 text-sm transition-colors"
-              >
+              <button onClick={handleDelete} className="text-red-400 hover:text-red-300 text-sm transition-colors">
                 Delete task
               </button>
               <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors"
-                >
+                <button onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors">
                   Cancel
                 </button>
                 <button
@@ -256,7 +266,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
             </div>
           </div>
 
-          {/* Right — comments */}
           <div className="w-72 flex flex-col">
             <div className="px-4 py-3 border-b border-white/10">
               <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wide">
@@ -264,7 +273,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               </h3>
             </div>
 
-            {/* Comments list */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {comments.length === 0 && (
                 <p className="text-xs text-white/20 text-center py-4">No comments yet</p>
@@ -297,7 +305,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               <div ref={commentsEndRef} />
             </div>
 
-            {/* Comment input */}
             <form onSubmit={handleAddComment} className="px-4 py-3 border-t border-white/10">
               <textarea
                 value={newComment}
