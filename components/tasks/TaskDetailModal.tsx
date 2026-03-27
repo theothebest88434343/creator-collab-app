@@ -103,7 +103,7 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   const supabase = createClient()
   const { data } = await supabase
     .from('task_comments')
-    .select('*, user:users!task_comments_user_id_fkey(full_name, email)')
+    .select('*')
     .eq('task_id', task.id)
     .order('created_at', { ascending: true })
   if (data) setComments(data as Comment[])
