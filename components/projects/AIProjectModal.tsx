@@ -35,6 +35,9 @@ const LOADING_STEPS = [
   'Almost ready...',
 ]
 
+const POSTING_OPTIONS = ['Once a week', 'Twice a week', '3x a week', 'Daily', 'Whenever I feel like it']
+const TEAM_OPTIONS = ['Just me', 'Me + 1 friend', 'Small team (3-5)', 'Bigger team (5+)']
+
 type Props = {
   userId: string
   onCreated: () => void
@@ -43,8 +46,10 @@ type Props = {
 
 export function AIProjectModal({ userId, onCreated, onClose }: Props) {
   const router = useRouter()
+  const [step, setStep] = useState<'prompt' | 'context' | 'loading' | 'review'>('prompt')
   const [prompt, setPrompt] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [postingFrequency, setPostingFrequency] = useState('')
+  const [teamSize, setTeamSize] = useState('')
   const [loadingStep, setLoadingStep] = useState(0)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,23 +57,19 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set())
 
   async function handleGenerate() {
-    if (!prompt.trim()) return
-    setLoading(true)
+    setStep('loading')
     setLoadingStep(0)
     setError(null)
 
     const interval = setInterval(() => {
-      setLoadingStep(prev => {
-        if (prev < LOADING_STEPS.length - 1) return prev + 1
-        return prev
-      })
+      setLoadingStep(prev => prev < LOADING_STEPS.length - 1 ? prev + 1 : prev)
     }, 800)
 
     try {
       const res = await fetch('/api/ai/generate-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, postingFrequency, teamSize }),
       })
 
       const data = await res.json()
@@ -78,11 +79,12 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
 
       setGenerated(data.project)
       setSelectedTasks(new Set(data.project.tasks.map((_: any, i: number) => i)))
+      setStep('review')
     } catch (err: any) {
       clearInterval(interval)
       setError(err.message)
+      setStep('context')
     }
-    setLoading(false)
   }
 
   function toggleTask(index: number) {
@@ -155,7 +157,109 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading ? (
+
+          {/* Step 1 — Prompt */}
+          {step === 'prompt' && (
+            <div className="space-y-4">
+              <p className="text-white/40 text-sm">Just describe your idea casually — no need to be formal!</p>
+              <div className="space-y-2">
+                <p className="text-xs text-white/30 uppercase tracking-wide">Try something like...</p>
+                {[
+                  'cooking videos with a fun twist for YouTube',
+                  'travel vlogs around Southeast Asia on a budget',
+                  'funny gaming clips and highlights on YouTube',
+                ].map(example => (
+                  <button
+                    key={example}
+                    onClick={() => setPrompt(example)}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-white/10 text-white/40 text-xs hover:border-white/20 hover:text-white/60 transition-colors"
+                  >
+                    "{example}"
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder="e.g. cooking videos with a fun twist, travel vlogs in Japan, gaming clips..."
+                rows={3}
+                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
+              />
+              <p className="text-xs text-white/20">The more specific you are, the better the tasks will be!</p>
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <button
+                onClick={() => setStep('context')}
+                disabled={!prompt.trim()}
+                className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
+          {/* Step 2 — Context questions */}
+          {step === 'context' && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-medium text-white/70 mb-3">How often do you want to post?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {POSTING_OPTIONS.map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setPostingFrequency(option)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                        postingFrequency === option
+                          ? 'bg-white/10 border-white/30 text-white'
+                          : 'bg-transparent border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-white/70 mb-3">Who's working on this?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {TEAM_OPTIONS.map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setTeamSize(option)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                        teamSize === option
+                          ? 'bg-white/10 border-white/30 text-white'
+                          : 'bg-transparent border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('prompt')}
+                  className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={!postingFrequency || !teamSize}
+                  className="flex-1 rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+                >
+                  ✨ Generate
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Loading */}
+          {step === 'loading' && (
             <div className="flex flex-col items-center justify-center py-12 space-y-6">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 rounded-full border-2 border-white/10" />
@@ -176,48 +280,11 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
                 </div>
               </div>
             </div>
-          ) : !generated ? (
-            <div className="space-y-4">
-              <p className="text-white/40 text-sm">Just describe your idea casually — no need to be formal!</p>
+          )}
 
-              {/* Example prompts */}
-              <div className="space-y-2">
-                <p className="text-xs text-white/30 uppercase tracking-wide">Try something like...</p>
-                {[
-                  'cooking videos with handstands at the start',
-                  'travel vlogs around Southeast Asia on a budget',
-                  'funny gaming clips and highlights on YouTube',
-                ].map(example => (
-                  <button
-                    key={example}
-                    onClick={() => setPrompt(example)}
-                    className="w-full text-left px-3 py-2 rounded-lg border border-white/10 text-white/40 text-xs hover:border-white/20 hover:text-white/60 transition-colors"
-                  >
-                    "{example}"
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                placeholder="e.g. cooking videos with handstands, travel vlogs in Japan, gaming clips with funny edits..."
-                rows={3}
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
-              />
-              <p className="text-xs text-white/20">The more specific you are, the better the tasks will be!</p>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-              <button
-                onClick={handleGenerate}
-                disabled={!prompt.trim()}
-                className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
-              >
-                ✨ Generate project
-              </button>
-            </div>
-          ) : (
+          {/* Step 4 — Review */}
+          {step === 'review' && generated && (
             <div className="space-y-4">
-              {/* Project preview */}
               <div className="bg-[#2a2a2a] rounded-xl p-4 border border-white/10">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm">{CATEGORY_LABELS[generated.category]}</span>
@@ -226,7 +293,6 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
                 <p className="text-white/40 text-sm mt-1">{generated.description}</p>
               </div>
 
-              {/* Tasks */}
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-2">
                   Tasks ({selectedTasks.size} selected)
@@ -262,19 +328,17 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
                   })}
                 </div>
               </div>
-
-              {error && <p className="text-red-400 text-sm">{error}</p>}
             </div>
           )}
         </div>
 
-        {generated && !loading && (
+        {step === 'review' && generated && (
           <div className="px-6 py-4 border-t border-white/10 flex gap-3 flex-shrink-0">
             <button
-              onClick={() => { setGenerated(null); setError(null) }}
+              onClick={() => { setGenerated(null); setStep('prompt'); setError(null) }}
               className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-white/60 hover:text-white transition-colors"
             >
-              ← Regenerate
+              ← Start over
             </button>
             <button
               onClick={handleCreate}
