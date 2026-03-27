@@ -6,14 +6,18 @@ import { getProjects } from '@/lib/services/projects'
 import { ProjectCard } from '@/components/projects/ProjectCard'
 import { NewProjectModal } from '@/components/projects/NewProjectModal'
 import { AIProjectModal } from '@/components/projects/AIProjectModal'
+import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useSearchParams } from 'next/navigation'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     async function load() {
@@ -24,6 +28,19 @@ export default function ProjectsPage() {
       const data = await getProjects(user.id)
       setProjects(data)
       setLoading(false)
+
+      // Show onboarding if no projects
+      if (data.length === 0) {
+        setShowOnboarding(true)
+      }
+
+      // Open AI modal if redirected from onboarding
+      if (searchParams.get('ai') === 'true') {
+        setShowAIModal(true)
+      }
+      if (searchParams.get('new') === 'true') {
+        setShowModal(true)
+      }
     }
     load()
   }, [])
@@ -65,7 +82,7 @@ export default function ProjectsPage() {
               </div>
             ))}
           </div>
-        ) : projects.length === 0 ? (
+        ) : projects.length === 0 && !showOnboarding ? (
           <div className="text-center py-16">
             <p className="text-white/40 mb-4">No projects yet.</p>
             <div className="flex items-center justify-center gap-4">
@@ -91,6 +108,13 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {showOnboarding && userId && (
+        <OnboardingModal
+          userId={userId}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
 
       {showModal && userId && (
         <NewProjectModal
