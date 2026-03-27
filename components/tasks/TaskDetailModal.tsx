@@ -54,7 +54,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentUserName, setCurrentUserName] = useState('')
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,15 +61,8 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
     loadComments()
 
     const supabase = createClient()
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      setCurrentUserId(user.id)
-      const { data: profile } = await supabase
-        .from('users')
-        .select('full_name, email')
-        .eq('id', user.id)
-        .single()
-      setCurrentUserName(profile?.full_name || profile?.email || 'You')
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
     })
 
     const channel = supabase
@@ -87,7 +79,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
           .eq('id', payload.new.user_id)
           .single()
         setComments(prev => {
-          // Avoid duplicates
           if (prev.find(c => c.id === payload.new.id)) return prev
           return [...prev, { ...payload.new, user } as Comment]
         })
@@ -119,7 +110,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
 
     if (!data) return
 
-    // Fetch user names for each comment
     const commentsWithUsers = await Promise.all(
       data.map(async comment => {
         const { data: user } = await supabase
@@ -180,13 +170,15 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-      <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+      <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-2xl flex flex-col" style={{ height: '85vh' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
           <h2 className="text-white font-semibold text-lg">Task details</h2>
           <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors text-xl">✕</button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
+          {/* Left — task details */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 border-r border-white/10">
             <div>
               <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Title</label>
@@ -266,13 +258,15 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
             </div>
           </div>
 
-          <div className="w-72 flex flex-col">
-            <div className="px-4 py-3 border-b border-white/10">
+          {/* Right — comments */}
+          <div className="w-72 flex flex-col flex-shrink-0">
+            <div className="px-4 py-3 border-b border-white/10 flex-shrink-0">
               <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wide">
                 Comments {comments.length > 0 && `(${comments.length})`}
               </h3>
             </div>
 
+            {/* Scrollable comments */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {comments.length === 0 && (
                 <p className="text-xs text-white/20 text-center py-4">No comments yet</p>
@@ -297,7 +291,7 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
                       )}
                     </div>
                   </div>
-                  <p className="text-sm text-white/70 bg-[#2a2a2a] rounded-lg px-3 py-2">
+                  <p className="text-sm text-white/70 bg-[#2a2a2a] rounded-lg px-3 py-2 break-words">
                     {comment.content}
                   </p>
                 </div>
@@ -305,28 +299,31 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               <div ref={commentsEndRef} />
             </div>
 
-            <form onSubmit={handleAddComment} className="px-4 py-3 border-t border-white/10">
-              <textarea
-                value={newComment}
-                onChange={e => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                rows={2}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleAddComment(e)
-                  }
-                }}
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
-              />
-              <button
-                type="submit"
-                disabled={submittingComment || !newComment.trim()}
-                className="mt-2 w-full rounded-lg bg-white/10 text-white/60 px-3 py-1.5 text-xs font-medium hover:bg-white/20 transition-colors disabled:opacity-50"
-              >
-                {submittingComment ? 'Posting...' : 'Post comment'}
-              </button>
-            </form>
+            {/* Comment input */}
+            <div className="px-4 py-3 border-t border-white/10 flex-shrink-0">
+              <form onSubmit={handleAddComment}>
+                <textarea
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  rows={2}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleAddComment(e)
+                    }
+                  }}
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingComment || !newComment.trim()}
+                  className="mt-2 w-full rounded-lg bg-white/10 text-white/60 px-3 py-1.5 text-xs font-medium hover:bg-white/20 transition-colors disabled:opacity-50"
+                >
+                  {submittingComment ? 'Posting...' : 'Post comment'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
