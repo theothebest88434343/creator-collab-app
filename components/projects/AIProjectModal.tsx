@@ -28,9 +28,9 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const LOADING_STEPS = [
   'Understanding your idea...',
-  'Researching best practices...',
+  'Thinking about your niche...',
   'Crafting your project plan...',
-  'Generating tasks...',
+  'Writing your tasks...',
   'Setting priorities and due dates...',
   'Almost ready...',
 ]
@@ -57,7 +57,6 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
     setLoadingStep(0)
     setError(null)
 
-    // Animate through loading steps
     const interval = setInterval(() => {
       setLoadingStep(prev => {
         if (prev < LOADING_STEPS.length - 1) return prev + 1
@@ -157,7 +156,6 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
-            /* Loading animation */
             <div className="flex flex-col items-center justify-center py-12 space-y-6">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 rounded-full border-2 border-white/10" />
@@ -180,15 +178,15 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
             </div>
           ) : !generated ? (
             <div className="space-y-4">
-              <p className="text-white/40 text-sm">Describe your project idea and AI will generate a complete plan with tasks.</p>
-              
+              <p className="text-white/40 text-sm">Just describe your idea casually — no need to be formal!</p>
+
               {/* Example prompts */}
               <div className="space-y-2">
                 <p className="text-xs text-white/30 uppercase tracking-wide">Try something like...</p>
                 {[
-                  'YouTube channel about budget travel tips',
-                  'Podcast series on entrepreneurship for Gen Z',
-                  'Social media campaign for a new product launch',
+                  'cooking videos with handstands at the start',
+                  'travel vlogs around Southeast Asia on a budget',
+                  'funny gaming clips and highlights on YouTube',
                 ].map(example => (
                   <button
                     key={example}
@@ -203,10 +201,11 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
               <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe your project idea..."
+                placeholder="e.g. cooking videos with handstands, travel vlogs in Japan, gaming clips with funny edits..."
                 rows={3}
                 className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
               />
+              <p className="text-xs text-white/20">The more specific you are, the better the tasks will be!</p>
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <button
                 onClick={handleGenerate}
@@ -282,7 +281,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
               disabled={creating || selectedTasks.size === 0}
               className="flex-1 rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
             >
-              {creating ? 'Creating...' : `Create project`}
+              {creating ? 'Creating...' : 'Create project'}
             </button>
           </div>
         )}

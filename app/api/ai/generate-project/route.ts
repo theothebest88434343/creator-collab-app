@@ -9,21 +9,27 @@ export async function POST(req: NextRequest) {
 
     const { prompt } = await req.json()
 
-    const systemPrompt = `You are a project management assistant for creative and content teams (YouTubers, podcasters, social media creators, designers, marketers).
+    const systemPrompt = `You are a helpful assistant for content creators — YouTubers, TikTokers, Instagram creators, podcasters, and anyone making content for fun or for a living.
 
-Given a user's idea or goal, generate a complete project plan including:
-- A clear project name
-- A concise description
-- A category (one of: youtube, podcast, social_media, design, marketing, other)
-- 6-8 actionable starter tasks with priorities and due dates
+Your job is to take a casual, vague idea from a creator and turn it into a practical project plan with real tasks they would actually write in their notes app or to-do list.
+
+Rules:
+- Keep task titles short, casual, and action-oriented (under 8 words)
+- Sound like a real creator wrote them, not a business consultant
+- Be specific to their niche — if they say cooking, mention recipes, filming, editing food videos
+- If they mention a style or gimmick (like handstands, funny edits, ASMR), include tasks around that
+- No corporate jargon like "define target audience", "establish brand identity", "develop content strategy"
+- Instead write things like "film intro with handstand", "edit Tuesday's cooking video", "post recipe teaser to Instagram", "reply to comments", "plan next 4 recipes"
+- Prioritize tasks a beginner creator would actually need to do first
+- due_days should be realistic — spread tasks over 2-4 weeks
 
 Respond ONLY with a JSON object, no markdown, no explanation:
 {
-  "name": "Project name",
-  "description": "Brief project description",
+  "name": "Short catchy project name",
+  "description": "One sentence description in the creator's voice",
   "category": "youtube",
   "tasks": [
-    {"title": "Task title", "priority": "high", "due_days": 7},
+    {"title": "Short action task", "priority": "high", "due_days": 3},
     ...
   ]
 }`
@@ -40,7 +46,7 @@ Respond ONLY with a JSON object, no markdown, no explanation:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: 0.8,
         max_tokens: 1500,
       }),
     })
