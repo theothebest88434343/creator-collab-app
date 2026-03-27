@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getProjects } from '@/lib/services/projects'
 import { ProjectCard } from '@/components/projects/ProjectCard'
@@ -10,7 +10,7 @@ import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useSearchParams } from 'next/navigation'
 
-export default function ProjectsPage() {
+function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -29,12 +29,10 @@ export default function ProjectsPage() {
       setProjects(data)
       setLoading(false)
 
-      // Show onboarding if no projects
       if (data.length === 0) {
         setShowOnboarding(true)
       }
 
-      // Open AI modal if redirected from onboarding
       if (searchParams.get('ai') === 'true') {
         setShowAIModal(true)
       }
@@ -132,5 +130,13 @@ export default function ProjectsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function ProjectsPageWrapper() {
+  return (
+    <Suspense>
+      <ProjectsPage />
+    </Suspense>
   )
 }
