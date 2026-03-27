@@ -99,11 +99,11 @@ export default function ProjectPage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
         (payload) => setTasks(prev => [payload.new as Task, ...prev]))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
-  (payload) => setTasks(prev => prev.map(task =>
-    task.id === payload.new.id
-      ? { ...payload.new, assignee: task.assignee } as Task
-      : task
-  )))
+        (payload) => setTasks(prev => prev.map(task =>
+          task.id === payload.new.id
+            ? { ...payload.new, assignee: task.assignee } as Task
+            : task
+        )))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks', filter: `project_id=eq.${id}` },
         (payload) => setTasks(prev => prev.filter(task => task.id !== payload.old.id)))
       .subscribe()
@@ -181,7 +181,7 @@ export default function ProjectPage() {
 
   if (loading) return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8 space-y-2">
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-7 w-48" />
@@ -207,20 +207,22 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+          <div className="min-w-0">
             <Link href="/projects" className="text-sm text-white/40 hover:text-white/70 mb-2 block transition-colors">
               ← All projects
             </Link>
-            <h1 className="text-2xl font-semibold text-white">{project.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-white truncate">{project.name}</h1>
             {project.description && (
-              <p className="text-white/40 mt-1 text-sm">{project.description}</p>
+              <p className="text-white/40 mt-1 text-sm line-clamp-2 sm:line-clamp-1">{project.description}</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
-  {userId && <PresenceAvatars projectId={id as string} currentUserId={userId} />}
-  <Link href={`/projects/${id}/files`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
+          <div className="flex items-center gap-2 flex-wrap">
+            {userId && <PresenceAvatars projectId={id as string} currentUserId={userId} />}
+            <Link href={`/projects/${id}/files`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
               Files
             </Link>
             <Link href={`/projects/${id}/members`} className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors">
@@ -228,13 +230,13 @@ export default function ProjectPage() {
             </Link>
             <button
               onClick={() => setShowAIModal(true)}
-              className="rounded-lg bg-white/5 border border-white/10 text-white/60 px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+              className="rounded-lg bg-white/5 border border-white/10 text-white/60 px-3 py-1.5 text-xs font-medium hover:bg-white/10 transition-colors"
             >
-              ✨ AI suggest
+              ✨ AI
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors"
+              className="rounded-lg bg-white text-black px-3 py-1.5 text-xs font-medium hover:bg-white/90 transition-colors"
             >
               + New task
             </button>
