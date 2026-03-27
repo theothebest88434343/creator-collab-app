@@ -24,9 +24,6 @@ const PRIORITY_COLORS = {
   high: 'bg-red-400/10 text-red-400',
 }
 
-const POSTING_OPTIONS = ['Once a week', 'Twice a week', '3x a week', 'Daily', 'Whenever I feel like it']
-const TEAM_OPTIONS = ['Just me', 'Me + 1 friend', 'Small team (3-5)', 'Bigger team (5+)']
-
 const LOADING_STEPS = [
   'Looking at your project...',
   'Thinking of ideas...',
@@ -43,9 +40,8 @@ export function AISuggestModal({
   onCreated,
   onClose,
 }: Props) {
-  const [step, setStep] = useState<'context' | 'loading' | 'review'>('context')
-  const [postingFrequency, setPostingFrequency] = useState('')
-  const [teamSize, setTeamSize] = useState('')
+  const [step, setStep] = useState<'prompt' | 'loading' | 'review'>('prompt')
+  const [focus, setFocus] = useState('')
   const [suggestions, setSuggestions] = useState<SuggestedTask[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [loadingStep, setLoadingStep] = useState(0)
@@ -69,8 +65,7 @@ export function AISuggestModal({
           projectName,
           projectDescription,
           existingTasks,
-          postingFrequency,
-          teamSize,
+          focus,
         }),
       })
 
@@ -85,7 +80,7 @@ export function AISuggestModal({
     } catch (err: any) {
       clearInterval(interval)
       setError(err.message)
-      setStep('context')
+      setStep('prompt')
     }
   }
 
@@ -137,55 +132,28 @@ export function AISuggestModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
 
-          {/* Step 1 — Context */}
-          {step === 'context' && (
-            <div className="space-y-6">
-              <p className="text-white/40 text-sm">Help the AI understand your project a bit better.</p>
-
+          {/* Step 1 — Prompt */}
+          {step === 'prompt' && (
+            <div className="space-y-4">
+              <p className="text-white/40 text-sm">
+                AI will suggest tasks based on <span className="text-white/60 font-medium">{projectName}</span>. You can also tell it what you need help with.
+              </p>
               <div>
-                <p className="text-sm font-medium text-white/70 mb-3">How often do you post?</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {POSTING_OPTIONS.map(option => (
-                    <button
-                      key={option}
-                      onClick={() => setPostingFrequency(option)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                        postingFrequency === option
-                          ? 'bg-white/10 border-white/30 text-white'
-                          : 'bg-transparent border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+                <label className="text-xs text-white/30 uppercase tracking-wide mb-2 block">
+                  What do you need help with? (optional)
+                </label>
+                <textarea
+                  value={focus}
+                  onChange={e => setFocus(e.target.value)}
+                  placeholder="e.g. editing this week's video, planning next month's content..."
+                  rows={2}
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
+                />
               </div>
-
-              <div>
-                <p className="text-sm font-medium text-white/70 mb-3">Who's working on this?</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {TEAM_OPTIONS.map(option => (
-                    <button
-                      key={option}
-                      onClick={() => setTeamSize(option)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                        teamSize === option
-                          ? 'bg-white/10 border-white/30 text-white'
-                          : 'bg-transparent border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {error && <p className="text-red-400 text-sm">{error}</p>}
-
               <button
                 onClick={handleGenerate}
-                disabled={!postingFrequency || !teamSize}
-                className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
+                className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors"
               >
                 ✨ Generate suggestions
               </button>
@@ -257,7 +225,7 @@ export function AISuggestModal({
         {step === 'review' && (
           <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between flex-shrink-0">
             <button
-              onClick={() => { setStep('context'); setError(null) }}
+              onClick={() => { setStep('prompt'); setError(null) }}
               className="text-sm text-white/40 hover:text-white/70 transition-colors"
             >
               ↺ Regenerate

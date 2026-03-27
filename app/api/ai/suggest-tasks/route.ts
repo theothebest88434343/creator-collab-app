@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { projectName, projectDescription, existingTasks, postingFrequency, teamSize } = await req.json()
+    const { projectName, projectDescription, existingTasks, focus } = await req.json()
 
     const systemPrompt = `You are a helpful assistant for content creators — YouTubers, TikTokers, Instagram creators, podcasters, and anyone making content for fun or for a living.
 
@@ -35,19 +35,17 @@ Respond ONLY with a JSON array, no markdown, no explanation:
 [{"title": "...", "priority": "high", "due_days": 7}]`
 
     const userMessage = existingTasks?.length
-      ? `Project: ${projectName}
+  ? `Project: ${projectName}
 Description: ${projectDescription || 'No description'}
-Posting frequency: ${postingFrequency || 'not specified'}
-Team size: ${teamSize || 'solo'}
+${focus ? `Focus area: ${focus}` : ''}
 
 Existing tasks:
 ${existingTasks.map((t: string) => `- ${t}`).join('\n')}
 
 Suggest 5 additional tasks that would help move this project forward. Don't repeat existing tasks.`
-      : `Project: ${projectName}
+  : `Project: ${projectName}
 Description: ${projectDescription || 'No description'}
-Posting frequency: ${postingFrequency || 'not specified'}
-Team size: ${teamSize || 'solo'}
+${focus ? `Focus area: ${focus}` : ''}
 
 Suggest 6 tasks to get this project started.`
 
