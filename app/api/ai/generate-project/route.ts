@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,7 +8,12 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { prompt, postingFrequency, teamSize } = await req.json()
+    const allowed = checkRateLimit(user.id)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please wait an hour before trying again.' }, { status: 429 })
+    }
+
+    const { prompt, postingFrequency, teamSize, category } = await req.json()
 
     const systemPrompt = `You are a helpful assistant for content creators — YouTubers, TikTokers, Instagram creators, podcasters, and anyone making content for fun or for a living.
 
@@ -63,6 +69,7 @@ Output:
 Respond ONLY with a JSON object, no markdown, no explanation.`
 
     const userMessage = `My idea: ${prompt}
+Content type: ${category || 'not specified'}
 Posting frequency: ${postingFrequency || 'not specified'}
 Team size: ${teamSize || 'solo'}`
 

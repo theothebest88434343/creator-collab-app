@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const allowed = checkRateLimit(user.id)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please wait an hour before trying again.' }, { status: 429 })
+    }
 
     const { projectName, projectDescription, existingTasks, focus } = await req.json()
 
@@ -35,7 +41,7 @@ Respond ONLY with a JSON array, no markdown, no explanation:
 [{"title": "...", "priority": "high", "due_days": 7}]`
 
     const userMessage = existingTasks?.length
-  ? `Project: ${projectName}
+      ? `Project: ${projectName}
 Description: ${projectDescription || 'No description'}
 ${focus ? `Focus area: ${focus}` : ''}
 
@@ -43,7 +49,7 @@ Existing tasks:
 ${existingTasks.map((t: string) => `- ${t}`).join('\n')}
 
 Suggest 5 additional tasks that would help move this project forward. Don't repeat existing tasks.`
-  : `Project: ${projectName}
+      : `Project: ${projectName}
 Description: ${projectDescription || 'No description'}
 ${focus ? `Focus area: ${focus}` : ''}
 
