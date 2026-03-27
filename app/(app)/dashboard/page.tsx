@@ -34,6 +34,18 @@ type Project = {
   created_at: string
 }
 
+function timeAgo(date: string) {
+  const now = new Date()
+  const then = new Date(date)
+  const seconds = Math.floor((now.getTime() - then.getTime()) / 1000)
+
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`
+  return then.toLocaleDateString()
+}
+
 export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userName, setUserName] = useState('')
@@ -258,9 +270,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-white/60">{a.message}</p>
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-xs text-white/20">{a.project?.name}</p>
-                      <p className="text-xs text-white/20">
-                        {new Date(a.created_at).toLocaleDateString()}
-                      </p>
+                      <p className="text-xs text-white/20">{timeAgo(a.created_at)}</p>
                     </div>
                   </div>
                 ))}
