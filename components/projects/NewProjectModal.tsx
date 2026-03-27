@@ -13,7 +13,7 @@ type Props = {
 const CATEGORIES = [
   { id: 'youtube', label: '🎬 YouTube' },
   { id: 'podcast', label: '🎙️ Podcast' },
-  { id: 'social_media', label: '📱 Social Media' },
+  { id: 'short_form', label: '📱 Short Form' },
   { id: 'design', label: '🎨 Design' },
   { id: 'marketing', label: '📣 Marketing' },
   { id: 'other', label: '📁 Other' },

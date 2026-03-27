@@ -14,11 +14,20 @@ type GeneratedProject = {
 const CATEGORY_LABELS: Record<string, string> = {
   youtube: '🎬 YouTube',
   podcast: '🎙️ Podcast',
-  social_media: '📱 Social Media',
+  short_form: '📱 Short Form',
   design: '🎨 Design',
   marketing: '📣 Marketing',
   other: '📁 Other',
 }
+
+const CATEGORY_OPTIONS = [
+  { id: 'youtube', label: '🎬 YouTube' },
+  { id: 'podcast', label: '🎙️ Podcast' },
+  { id: 'short_form', label: '📱 Short Form' },
+  { id: 'design', label: '🎨 Design' },
+  { id: 'marketing', label: '📣 Marketing' },
+  { id: 'other', label: '📁 Other' },
+]
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-green-400/10 text-green-400',
@@ -48,6 +57,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
   const router = useRouter()
   const [step, setStep] = useState<'prompt' | 'context' | 'loading' | 'review'>('prompt')
   const [prompt, setPrompt] = useState('')
+  const [category, setCategory] = useState('')
   const [postingFrequency, setPostingFrequency] = useState('')
   const [teamSize, setTeamSize] = useState('')
   const [loadingStep, setLoadingStep] = useState(0)
@@ -69,7 +79,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
       const res = await fetch('/api/ai/generate-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, postingFrequency, teamSize }),
+        body: JSON.stringify({ prompt, postingFrequency, teamSize, category }),
       })
 
       const data = await res.json()
@@ -147,7 +157,6 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
       <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-lg flex flex-col" style={{ maxHeight: '85vh' }}>
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span>✨</span>
@@ -201,6 +210,25 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
           {step === 'context' && (
             <div className="space-y-6">
               <div>
+                <p className="text-sm font-medium text-white/70 mb-3">What type of content is this?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATEGORY_OPTIONS.map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => setCategory(option.id)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                        category === option.id
+                          ? 'bg-white/10 border-white/30 text-white'
+                          : 'bg-transparent border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <p className="text-sm font-medium text-white/70 mb-3">How often do you want to post?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {POSTING_OPTIONS.map(option => (
@@ -249,7 +277,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
                 </button>
                 <button
                   onClick={handleGenerate}
-                  disabled={!postingFrequency || !teamSize}
+                  disabled={!postingFrequency || !teamSize || !category}
                   className="flex-1 rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
                 >
                   ✨ Generate
