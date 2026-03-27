@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 const CATEGORY_OPTIONS = [
   { id: 'youtube', label: '🎬 YouTube', desc: 'Videos, shorts, live streams' },
@@ -19,7 +18,6 @@ type Props = {
 }
 
 export function OnboardingModal({ userId, onComplete }: Props) {
-  const router = useRouter()
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -32,15 +30,6 @@ export function OnboardingModal({ userId, onComplete }: Props) {
     await supabase.from('users').update({ full_name: name }).eq('id', userId)
     setSaving(false)
     setStep(3)
-  }
-
-  async function handleFinish(useAI: boolean) {
-    onComplete()
-    if (useAI) {
-      router.push('/projects?ai=true')
-    } else {
-      router.push('/projects?new=true')
-    }
   }
 
   return (
@@ -164,47 +153,37 @@ export function OnboardingModal({ userId, onComplete }: Props) {
             </div>
           )}
 
-          {/* Step 4 — Create first project */}
+          {/* Step 4 — Done */}
           {step === 4 && (
             <div className="space-y-6 text-center">
               <div className="text-5xl mb-2">🚀</div>
               <div>
                 <h2 className="text-xl font-semibold text-white mb-1">You're all set!</h2>
                 <p className="text-white/40 text-sm leading-relaxed">
-                  Ready to create your first project? Let AI do the heavy lifting or start from scratch.
+                  Head to your projects and get started. You can use <span className="text-white/70">✨ AI generate</span> to create a full project instantly, or hit <span className="text-white/70">New project</span> to start manually.
                 </p>
               </div>
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleFinish(true)}
-                  className="w-full bg-white text-black rounded-xl px-4 py-4 text-sm font-medium hover:bg-white/90 transition-colors"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <span>✨</span>
-                    <div className="text-left">
-                      <p className="font-semibold">Generate with AI</p>
-                      <p className="text-xs text-black/50 font-normal">Describe your idea and AI creates your project</p>
-                    </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-left space-y-3">
+                <div className="flex items-center gap-3">
+                  <span>✨</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">AI generate</p>
+                    <p className="text-xs text-white/40">Describe your idea and AI creates everything</p>
                   </div>
-                </button>
-                <button
-                  onClick={() => handleFinish(false)}
-                  className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-4 text-sm hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <span>📝</span>
-                    <div className="text-left">
-                      <p className="font-medium">Start manually</p>
-                      <p className="text-xs text-white/40 font-normal">Create a project from scratch</p>
-                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span>📝</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">New project</p>
+                    <p className="text-xs text-white/40">Start from scratch your own way</p>
                   </div>
-                </button>
+                </div>
               </div>
               <button
                 onClick={onComplete}
-                className="text-xs text-white/20 hover:text-white/40 transition-colors"
+                className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors"
               >
-                Skip for now
+                Let's go →
               </button>
             </div>
           )}
