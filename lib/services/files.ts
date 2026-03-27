@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { logActivity } from '@/lib/services/activity'
 
 export async function getFiles(projectId: string) {
   const supabase = createClient()
@@ -32,6 +33,20 @@ export async function uploadFile(projectId: string, file: File, userId: string) 
   })
 
   if (dbError) throw dbError
+
+  // Log activity
+  const { data: profile } = await supabase
+    .from('users')
+    .select('full_name, email')
+    .eq('id', userId)
+    .single()
+  const name = profile?.full_name || profile?.email || 'Someone'
+  await logActivity({
+    projectId,
+    userId,
+    type: 'file_uploaded',
+    message: `${name} uploaded "${file.name}"`,
+  })
 }
 
 export async function getFileUrl(storagePath: string) {

@@ -7,12 +7,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { projectId, email } = body
 
-    // 1️⃣ Get current logged-in user
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser()
-
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
@@ -20,7 +15,6 @@ export async function POST(req: NextRequest) {
     const inviterName = user.user_metadata?.full_name || 'Someone'
     const inviterId = user.id
 
-    // 2️⃣ Check if inviter is a member of this project
     const { data: isMember, error: memberError } = await supabase
       .from('project_members')
       .select('*')
@@ -32,22 +26,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not allowed to invite' }, { status: 403 })
     }
 
-    // 3️⃣ Fetch project name
     const { data: project } = await supabase
       .from('projects')
       .select('name')
       .eq('id', projectId)
       .single()
 
-    // 4️⃣ Insert invite record and get token back
     const { data: invite, error: inviteError } = await supabase
       .from('project_invites')
-      .insert({
-        project_id: projectId,
-        email,
-        invited_by: inviterId,
-        accepted: false,
-      })
+      .insert({ project_id: projectId, email, invited_by: inviterId, accepted: false })
       .select('token')
       .single()
 
@@ -57,7 +44,6 @@ export async function POST(req: NextRequest) {
 
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`
 
-    // 5️⃣ Call Resend directly
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -77,7 +63,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errorData.message || 'Failed to send invite email.' }, { status: 500 })
     }
 
-    // 6️⃣ Notify the invitee if they already have an account
+    // Notify invitee if they have an account
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -92,6 +78,14 @@ export async function POST(req: NextRequest) {
         project_id: projectId,
       })
     }
+
+    // Log activity
+    await supabase.from('activity').insert({
+      project_id: projectId,
+      user_id: inviterId,
+      type: 'member_added',
+      message: `${inviterName} invited ${email} to the project`,
+    })
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
