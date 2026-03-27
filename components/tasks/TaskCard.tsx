@@ -56,18 +56,14 @@ export function TaskCard({ task, projectId, onUpdated }: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-center justify-between bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all group"
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-between bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all cursor-grab active:cursor-grabbing"
       >
         <div className="flex items-center gap-2 flex-1">
-          <button
-            {...attributes}
-            {...listeners}
-            className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing transition-colors"
-          >
-            ⠿
-          </button>
           <div className="flex-1 min-w-0">
             <p
+              onPointerDown={e => e.stopPropagation()}
               onClick={() => setShowDetail(true)}
               className={`text-sm cursor-pointer hover:text-white transition-colors truncate ${task.status === 'done' ? 'line-through text-white/20' : 'text-white/80'}`}
             >
