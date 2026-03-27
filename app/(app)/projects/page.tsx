@@ -5,12 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import { getProjects } from '@/lib/services/projects'
 import { ProjectCard } from '@/components/projects/ProjectCard'
 import { NewProjectModal } from '@/components/projects/NewProjectModal'
+import { AIProjectModal } from '@/components/projects/AIProjectModal'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,12 +39,20 @@ export default function ProjectsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-semibold text-white">My Projects</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors"
-          >
-            New project
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="rounded-lg bg-white/5 border border-white/10 text-white/60 px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              ✨ AI generate
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors"
+            >
+              New project
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -58,12 +68,20 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-white/40 mb-4">No projects yet.</p>
-            <button
-              onClick={() => setShowModal(true)}
-              className="text-white/60 text-sm font-medium hover:text-white transition-colors"
-            >
-              Create your first project →
-            </button>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setShowAIModal(true)}
+                className="text-white/60 text-sm font-medium hover:text-white transition-colors"
+              >
+                ✨ Generate with AI →
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-white/60 text-sm font-medium hover:text-white transition-colors"
+              >
+                Create manually →
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -79,6 +97,14 @@ export default function ProjectsPage() {
           userId={userId}
           onCreated={refresh}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {showAIModal && userId && (
+        <AIProjectModal
+          userId={userId}
+          onCreated={refresh}
+          onClose={() => setShowAIModal(false)}
         />
       )}
     </div>
