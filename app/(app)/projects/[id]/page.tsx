@@ -49,15 +49,16 @@ export default function ProjectPage() {
   const [showAIModal, setShowAIModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [dragStartStatus, setDragStartStatus] = useState<string | null>(null)
 
   const sensors = useSensors(
-  useSensor(PointerSensor, {
-    activationConstraint: { distance: 5 },
-  }),
-  useSensor(TouchSensor, {
-    activationConstraint: { delay: 250, tolerance: 5 },
-  })
-)
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    })
+  )
 
   const refreshTasks = useCallback(async () => {
     const data = await getTasks(id as string)
@@ -164,15 +165,13 @@ export default function ProjectPage() {
     const draggedTask = tasks.find(t => t.id === active.id)
     if (!draggedTask) return
 
-    const overId = over.id as string
-    const newStatus = COLUMNS.find(c => c.id === overId)?.id
-      ?? tasks.find(t => t.id === overId)?.status
+    const currentStatus = draggedTask.status
 
-    if (!newStatus) return
-
-    if (newStatus !== draggedTask.status) {
-      await updateTaskStatus(draggedTask.id, newStatus as Task['status'])
+    if (currentStatus !== dragStartStatus) {
+      await updateTaskStatus(draggedTask.id, currentStatus as Task['status'])
     }
+
+    setDragStartStatus(null)
   }
 
   if (loading) return (
@@ -241,7 +240,10 @@ export default function ProjectPage() {
           collisionDetection={closestCorners}
           onDragStart={({ active }) => {
             const task = tasks.find(t => t.id === active.id)
-            if (task) setActiveTask(task)
+            if (task) {
+              setActiveTask(task)
+              setDragStartStatus(task.status)
+            }
           }}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
