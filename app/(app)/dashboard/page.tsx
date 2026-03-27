@@ -3,16 +3,19 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getAllRecentActivity } from '@/lib/services/activity'
+import { TaskDetailModal } from '@/components/tasks/TaskDetailModal'
 import Link from 'next/link'
 
 type Task = {
   id: string
   title: string
-  status: string
-  priority: string
+  description: string | null
+  status: 'todo' | 'in_progress' | 'done'
+  priority: 'low' | 'medium' | 'high'
   due_date: string | null
   project_id: string
   assignee_id: string | null
+  created_at: string
   project?: { name: string }
 }
 
@@ -22,7 +25,6 @@ type Activity = {
   type: string
   created_at: string
   project?: { name: string }
-  user?: { full_name: string; email: string }
 }
 
 type Project = {
@@ -40,6 +42,30 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [activity, setActivity] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+  async function loadTasks(supabase: any, user: any, projectIds: string[]) {
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('*, project:projects(name)')
+      .eq('assignee_id', user.id)
+      .neq('status', 'done')
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .limit(10)
+    setMyTasks(tasks || [])
+
+    if (projectIds.length > 0) {
+      const { data: allOpenTasks } = await supabase
+        .from('tasks')
+        .select('*, project:projects(name)')
+        .in('project_id', projectIds)
+        .neq('status', 'done')
+        .is('assignee_id', null)
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .limit(10)
+      setAllTasks(allOpenTasks || [])
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -55,17 +81,6 @@ export default function DashboardPage() {
         .single()
       setUserName(profile?.full_name || user.email?.split('@')[0] || 'there')
 
-      // Get tasks assigned to me
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('*, project:projects(name)')
-        .eq('assignee_id', user.id)
-        .neq('status', 'done')
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .limit(10)
-      setMyTasks(tasks || [])
-
-      // Get all projects the user is a member of
       const { data: memberships } = await supabase
         .from('project_members')
         .select('project:projects(*)')
@@ -74,19 +89,7 @@ export default function DashboardPage() {
       setRecentProjects((memberships || []).map((m: any) => m.project))
 
       const projectIds = (memberships || []).map((m: any) => m.project?.id).filter(Boolean)
-
-      // Get all open tasks across all projects (not just assigned to me)
-      if (projectIds.length > 0) {
-        const { data: allOpenTasks } = await supabase
-          .from('tasks')
-          .select('*, project:projects(name)')
-          .in('project_id', projectIds)
-          .neq('status', 'done')
-          .is('assignee_id', null)
-          .order('due_date', { ascending: true, nullsFirst: false })
-          .limit(10)
-        setAllTasks(allOpenTasks || [])
-      }
+      await loadTasks(supabase, user, projectIds)
 
       const activityData = await getAllRecentActivity(user.id)
       setActivity(activityData)
@@ -95,6 +98,18 @@ export default function DashboardPage() {
     }
     load()
   }, [])
+
+  async function handleTaskUpdated() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: memberships } = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', user.id)
+    const projectIds = (memberships || []).map((m: any) => m.project_id)
+    await loadTasks(supabase, user, projectIds)
+  }
 
   const overdueTasks = myTasks.filter(t => t.due_date && new Date(t.due_date) < new Date())
   const dueSoonTasks = myTasks.filter(t => {
@@ -113,26 +128,27 @@ export default function DashboardPage() {
   const TaskCard = ({ task }: { task: Task }) => {
     const isOverdue = task.due_date && new Date(task.due_date) < new Date()
     return (
-      <Link href={`/projects/${task.project_id}`}>
-        <div className="bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-white/80 truncate flex-1">{task.title}</p>
-            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-              {task.priority && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_COLORS[task.priority]}`}>
-                  {task.priority}
-                </span>
-              )}
-              {task.due_date && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-md ${isOverdue ? 'bg-red-400/10 text-red-400' : 'text-white/30'}`}>
-                  {isOverdue ? '⚠ ' : ''}{new Date(task.due_date).toLocaleDateString()}
-                </span>
-              )}
-            </div>
+      <div
+        onClick={() => setSelectedTask(task)}
+        className="bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all cursor-pointer"
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-white/80 truncate flex-1">{task.title}</p>
+          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+            {task.priority && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_COLORS[task.priority]}`}>
+                {task.priority}
+              </span>
+            )}
+            {task.due_date && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-md ${isOverdue ? 'bg-red-400/10 text-red-400' : 'text-white/30'}`}>
+                {isOverdue ? '⚠ ' : ''}{new Date(task.due_date).toLocaleDateString()}
+              </span>
+            )}
           </div>
-          <p className="text-xs text-white/30 mt-1">{(task as any).project?.name}</p>
         </div>
-      </Link>
+        <p className="text-xs text-white/30 mt-1">{(task as any).project?.name}</p>
+      </div>
     )
   }
 
@@ -149,7 +165,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
           <p className="text-white/40 text-sm mt-1">
@@ -157,7 +172,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4">
             <p className="text-xs text-white/30 uppercase tracking-wide mb-1">My open tasks</p>
@@ -178,9 +192,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-6">
-          {/* Left column — tasks */}
           <div className="col-span-2 space-y-6">
-            {/* My tasks */}
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">My tasks</h2>
               {myTasks.length === 0 ? (
@@ -195,7 +207,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Unassigned tasks */}
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">
                 Unassigned tasks
@@ -217,7 +228,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Recent projects */}
             <div>
               <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Recent projects</h2>
               <div className="grid grid-cols-2 gap-3">
@@ -235,7 +245,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Activity feed */}
           <div>
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Recent activity</h2>
             {activity.length === 0 ? (
@@ -260,6 +269,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          projectId={selectedTask.project_id}
+          onUpdated={handleTaskUpdated}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
   )
 }
