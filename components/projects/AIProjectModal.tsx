@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 type GeneratedProject = {
   name: string
@@ -25,6 +26,15 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: 'bg-red-400/10 text-red-400',
 }
 
+const LOADING_STEPS = [
+  'Understanding your idea...',
+  'Researching best practices...',
+  'Crafting your project plan...',
+  'Generating tasks...',
+  'Setting priorities and due dates...',
+  'Almost ready...',
+]
+
 type Props = {
   userId: string
   onCreated: () => void
@@ -32,8 +42,10 @@ type Props = {
 }
 
 export function AIProjectModal({ userId, onCreated, onClose }: Props) {
+  const router = useRouter()
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingStep, setLoadingStep] = useState(0)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [generated, setGenerated] = useState<GeneratedProject | null>(null)
@@ -42,7 +54,16 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
   async function handleGenerate() {
     if (!prompt.trim()) return
     setLoading(true)
+    setLoadingStep(0)
     setError(null)
+
+    // Animate through loading steps
+    const interval = setInterval(() => {
+      setLoadingStep(prev => {
+        if (prev < LOADING_STEPS.length - 1) return prev + 1
+        return prev
+      })
+    }, 800)
 
     try {
       const res = await fetch('/api/ai/generate-project', {
@@ -52,11 +73,14 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
       })
 
       const data = await res.json()
+      clearInterval(interval)
+
       if (!res.ok) throw new Error(data.error || 'Failed to generate project')
 
       setGenerated(data.project)
       setSelectedTasks(new Set(data.project.tasks.map((_: any, i: number) => i)))
     } catch (err: any) {
+      clearInterval(interval)
       setError(err.message)
     }
     setLoading(false)
@@ -81,7 +105,6 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
       ? `[${categoryLabel}] ${generated.description}`
       : generated.description
 
-    // Create the project
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .insert({ name: generated.name, description: fullDescription, owner_id: userId })
@@ -94,14 +117,12 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
       return
     }
 
-    // Add user as owner
     await supabase.from('project_members').insert({
       project_id: project.id,
       user_id: userId,
       role: 'owner',
     })
 
-    // Create selected tasks
     const selectedTaskList = generated.tasks.filter((_, i) => selectedTasks.has(i))
     for (const task of selectedTaskList) {
       const dueDate = new Date()
@@ -119,7 +140,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
 
     onCreated()
     onClose()
-    setCreating(false)
+    router.push(`/projects/${project.id}`)
   }
 
   return (
@@ -135,23 +156,64 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {!generated ? (
+          {loading ? (
+            /* Loading animation */
+            <div className="flex flex-col items-center justify-center py-12 space-y-6">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+                <div className="absolute inset-0 rounded-full border-2 border-t-white animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center text-2xl">✨</div>
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-white font-medium">{LOADING_STEPS[loadingStep]}</p>
+                <div className="flex items-center justify-center gap-1">
+                  {LOADING_STEPS.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                        i <= loadingStep ? 'bg-white' : 'bg-white/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : !generated ? (
             <div className="space-y-4">
               <p className="text-white/40 text-sm">Describe your project idea and AI will generate a complete plan with tasks.</p>
+              
+              {/* Example prompts */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/30 uppercase tracking-wide">Try something like...</p>
+                {[
+                  'YouTube channel about budget travel tips',
+                  'Podcast series on entrepreneurship for Gen Z',
+                  'Social media campaign for a new product launch',
+                ].map(example => (
+                  <button
+                    key={example}
+                    onClick={() => setPrompt(example)}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-white/10 text-white/40 text-xs hover:border-white/20 hover:text-white/60 transition-colors"
+                  >
+                    "{example}"
+                  </button>
+                ))}
+              </div>
+
               <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="e.g. I want to start a YouTube channel about cooking Italian food for beginners..."
-                rows={4}
+                placeholder="Describe your project idea..."
+                rows={3}
                 className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
               />
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <button
                 onClick={handleGenerate}
-                disabled={loading || !prompt.trim()}
+                disabled={!prompt.trim()}
                 className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
               >
-                {loading ? '✨ Generating...' : '✨ Generate project'}
+                ✨ Generate project
               </button>
             </div>
           ) : (
@@ -189,7 +251,10 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
                         }`}>
                           {selectedTasks.has(i) && <span className="text-black text-xs">✓</span>}
                         </div>
-                        <p className="text-sm text-white/80 flex-1">{task.title}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white/80">{task.title}</p>
+                          <p className="text-xs text-white/30">Due {due.toLocaleDateString()}</p>
+                        </div>
                         <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${PRIORITY_COLORS[task.priority]}`}>
                           {task.priority}
                         </span>
@@ -204,7 +269,7 @@ export function AIProjectModal({ userId, onCreated, onClose }: Props) {
           )}
         </div>
 
-        {generated && (
+        {generated && !loading && (
           <div className="px-6 py-4 border-t border-white/10 flex gap-3 flex-shrink-0">
             <button
               onClick={() => { setGenerated(null); setError(null) }}
