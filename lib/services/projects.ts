@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
+import type { Project } from '@/lib/types'
 
-export async function getProjects(userId: string) {
+export async function getProjects(userId: string): Promise<Project[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('project_members')
@@ -8,10 +9,25 @@ export async function getProjects(userId: string) {
     .eq('user_id', userId)
 
   if (error) throw error
-  return data.map((d: any) => d.project)
+  return data.map((d: { project: Project }) => d.project)
 }
+
 export async function updateProject(projectId: string, name: string, description: string) {
   const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Verify user is a member of this project
+  const { data: membership } = await supabase
+    .from('project_members')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!membership) throw new Error('Not a project member')
+
   const { error } = await supabase
     .from('projects')
     .update({ name, description })
@@ -19,7 +35,8 @@ export async function updateProject(projectId: string, name: string, description
 
   if (error) throw error
 }
-export async function createProject(name: string, description: string, userId: string) {
+
+export async function createProject(name: string, description: string, userId: string): Promise<Project> {
   const supabase = createClient()
 
   const { data: project, error } = await supabase
@@ -45,6 +62,20 @@ export async function createProject(name: string, description: string, userId: s
 
 export async function deleteProject(projectId: string) {
   const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Only the owner can delete the project
+  const { data: project } = await supabase
+    .from('projects')
+    .select('owner_id')
+    .eq('id', projectId)
+    .single()
+
+  if (!project) throw new Error('Project not found')
+  if (project.owner_id !== user.id) throw new Error('Only the project owner can delete this project')
+
   const { error } = await supabase
     .from('projects')
     .delete()

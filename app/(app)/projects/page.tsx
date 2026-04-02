@@ -8,10 +8,11 @@ import { NewProjectModal } from '@/components/projects/NewProjectModal'
 import { AIProjectModal } from '@/components/projects/AIProjectModal'
 import { OnboardingModal } from '@/components/ui/OnboardingModal'
 import { Skeleton } from '@/components/ui/Skeleton'
+import type { Project } from '@/lib/types'
 import { useSearchParams } from 'next/navigation'
 
 function ProjectsPage() {
-  const [projects, setProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
@@ -30,15 +31,11 @@ function ProjectsPage() {
       setLoading(false)
 
       if (data.length === 0 && !searchParams.get('ai') && !searchParams.get('new')) {
-  setShowOnboarding(true)
-}
+        setShowOnboarding(true)
+      }
 
-if (searchParams.get('ai') === 'true') {
-  setShowAIModal(true)
-}
-if (searchParams.get('new') === 'true') {
-  setShowModal(true)
-}
+      if (searchParams.get('ai') === 'true') setShowAIModal(true)
+      if (searchParams.get('new') === 'true') setShowModal(true)
     }
     load()
   }, [])

@@ -13,7 +13,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many requests. Please wait an hour before trying again.' }, { status: 429 })
     }
 
-    const { prompt, postingFrequency, teamSize, category } = await req.json()
+    const body = await req.json()
+    const { prompt, postingFrequency, teamSize, category } = body
+
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      return NextResponse.json({ error: 'prompt is required.' }, { status: 400 })
+    }
+    if (prompt.length > 1000) {
+      return NextResponse.json({ error: 'prompt is too long (max 1000 characters).' }, { status: 400 })
+    }
 
     const systemPrompt = `You are a helpful assistant for content creators — YouTubers, TikTokers, Instagram creators, podcasters, and anyone making content for fun or for a living.
 
@@ -98,10 +106,17 @@ Team size: ${teamSize || 'solo'}`
 
     const text = data.choices[0].message.content.trim()
     const clean = text.replace(/```json|```/g, '').trim()
-    const project = JSON.parse(clean)
+
+    let project
+    try {
+      project = JSON.parse(clean)
+    } catch {
+      return NextResponse.json({ error: 'AI returned an invalid response. Please try again.' }, { status: 500 })
+    }
 
     return NextResponse.json({ project })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -4,30 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { updateTask, deleteTask } from '@/lib/services/tasks'
 import { getMembers } from '@/lib/services/members'
 import { createClient } from '@/lib/supabase/client'
-
-type Task = {
-  id: string
-  title: string
-  description: string | null
-  status: 'todo' | 'in_progress' | 'done'
-  due_date: string | null
-  assignee_id: string | null
-  priority: 'low' | 'medium' | 'high'
-  created_at: string
-}
-
-type Member = {
-  user_id: string
-  user: { id: string; full_name: string; email: string }
-}
-
-type Comment = {
-  id: string
-  content: string
-  created_at: string
-  user_id: string
-  user?: { full_name: string; email: string }
-}
+import { PRIORITY_COLORS } from '@/lib/constants'
+import type { Task, Member, Comment } from '@/lib/types'
 
 type Props = {
   task: Task
@@ -36,23 +14,19 @@ type Props = {
   onClose: () => void
 }
 
-const PRIORITY_COLORS = {
-  low: 'text-green-400',
-  medium: 'text-yellow-400',
-  high: 'text-red-400',
-}
-
 export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [dueDate, setDueDate] = useState(task.due_date ? task.due_date.split('T')[0] : '')
   const [assigneeId, setAssigneeId] = useState(task.assignee_id || '')
-  const [priority, setPriority] = useState(task.priority || 'medium')
+  const [priority, setPriority] = useState<Task['priority']>(task.priority || 'medium')
   const [members, setMembers] = useState<Member[]>([])
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [commentError, setCommentError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'details' | 'comments'>('details')
   const commentsEndRef = useRef<HTMLDivElement>(null)
@@ -73,16 +47,19 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
         schema: 'public',
         table: 'task_comments',
         filter: `task_id=eq.${task.id}`
-      }, async (payload) => {
-        const { data: user } = await supabase
+      }, (payload) => {
+        // Only one extra query for this single realtime event — not an N+1
+        supabase
           .from('users')
           .select('full_name, email')
           .eq('id', payload.new.user_id)
           .single()
-        setComments(prev => {
-          if (prev.find(c => c.id === payload.new.id)) return prev
-          return [...prev, { ...payload.new, user } as Comment]
-        })
+          .then(({ data: user }) => {
+            setComments(prev => {
+              if (prev.find(c => c.id === payload.new.id)) return prev
+              return [...prev, { ...payload.new, user } as Comment]
+            })
+          })
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -103,82 +80,95 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
 
   async function loadComments() {
     const supabase = createClient()
+    // Fix N+1: single JOIN query instead of one query per comment
     const { data } = await supabase
       .from('task_comments')
-      .select('*')
+      .select('*, user:users(full_name, email)')
       .eq('task_id', task.id)
       .order('created_at', { ascending: true })
 
-    if (!data) return
-
-    const commentsWithUsers = await Promise.all(
-      data.map(async comment => {
-        const { data: user } = await supabase
-          .from('users')
-          .select('full_name, email')
-          .eq('id', comment.user_id)
-          .single()
-        return { ...comment, user }
-      })
-    )
-    setComments(commentsWithUsers as Comment[])
+    if (data) setComments(data as Comment[])
   }
 
   async function handleAddComment(e: React.FormEvent) {
     e.preventDefault()
     if (!newComment.trim()) return
     setSubmittingComment(true)
+    setCommentError(null)
 
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    await supabase.from('task_comments').insert({
-      task_id: task.id,
-      user_id: user.id,
-      content: newComment.trim(),
-    })
+      const { error } = await supabase.from('task_comments').insert({
+        task_id: task.id,
+        user_id: user.id,
+        content: newComment.trim(),
+      })
 
-    setNewComment('')
-    setSubmittingComment(false)
+      if (error) throw error
+      setNewComment('')
+    } catch {
+      setCommentError('Failed to post comment. Please try again.')
+    } finally {
+      setSubmittingComment(false)
+    }
   }
 
   async function handleDeleteComment(commentId: string) {
-    const supabase = createClient()
-    await supabase.from('task_comments').delete().eq('id', commentId)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('task_comments').delete().eq('id', commentId)
+      if (error) throw error
+    } catch {
+      setCommentError('Failed to delete comment. Please try again.')
+    }
   }
 
   async function handleSave() {
+    if (!title.trim()) {
+      setSaveError('Title is required.')
+      return
+    }
     setSaving(true)
-    await updateTask(task.id, {
-      title,
-      description: description || undefined,
-      due_date: dueDate || null,
-      assignee_id: assigneeId || null,
-      priority: priority as 'low' | 'medium' | 'high',
-    })
-    onUpdated()
-    setSaving(false)
-    onClose()
+    setSaveError(null)
+    try {
+      await updateTask(task.id, {
+        title: title.trim(),
+        description: description || undefined,
+        due_date: dueDate || null,
+        assignee_id: assigneeId || null,
+        priority,
+      })
+      onUpdated()
+      onClose()
+    } catch {
+      setSaveError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this task?')) return
-    await deleteTask(task.id)
-    onUpdated()
-    onClose()
+    try {
+      await deleteTask(task.id)
+      onUpdated()
+      onClose()
+    } catch {
+      setSaveError('Failed to delete task. Please try again.')
+    }
   }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
       <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
           <h2 className="text-white font-semibold text-lg">Task details</h2>
           <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors text-xl">✕</button>
         </div>
 
-        {/* Mobile tabs */}
         <div className="flex sm:hidden border-b border-white/10 flex-shrink-0">
           <button
             onClick={() => setActiveTab('details')}
@@ -199,13 +189,13 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left — task details */}
           <div className={`flex-1 overflow-y-auto px-6 py-4 space-y-4 sm:border-r border-white/10 ${activeTab === 'comments' ? 'hidden sm:block' : 'block'}`}>
             <div>
               <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Title</label>
               <input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
+                required
                 className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30"
               />
             </div>
@@ -226,8 +216,8 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
                 <label className="text-xs text-white/40 uppercase tracking-wide mb-1 block">Priority</label>
                 <select
                   value={priority}
-                  onChange={e => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-                  className={`w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-white/30 ${PRIORITY_COLORS[priority as keyof typeof PRIORITY_COLORS]}`}
+                  onChange={e => setPriority(e.target.value as Task['priority'])}
+                  className={`w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-white/30 ${PRIORITY_COLORS[priority]}`}
                 >
                   <option value="low" className="text-green-400">Low</option>
                   <option value="medium" className="text-yellow-400">Medium</option>
@@ -260,6 +250,10 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
               </select>
             </div>
 
+            {saveError && (
+              <p className="text-xs text-red-400">{saveError}</p>
+            )}
+
             <div className="flex items-center justify-between pt-2">
               <button onClick={handleDelete} className="text-red-400 hover:text-red-300 text-sm transition-colors">
                 Delete task
@@ -279,7 +273,6 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
             </div>
           </div>
 
-          {/* Right — comments */}
           <div className={`w-full sm:w-72 flex flex-col flex-shrink-0 ${activeTab === 'details' ? 'hidden sm:flex' : 'flex'}`}>
             <div className="hidden sm:block px-4 py-3 border-b border-white/10 flex-shrink-0">
               <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wide">
@@ -320,6 +313,9 @@ export function TaskDetailModal({ task, projectId, onUpdated, onClose }: Props) 
             </div>
 
             <div className="px-4 py-3 border-t border-white/10 flex-shrink-0">
+              {commentError && (
+                <p className="text-xs text-red-400 mb-2">{commentError}</p>
+              )}
               <form onSubmit={handleAddComment}>
                 <textarea
                   value={newComment}

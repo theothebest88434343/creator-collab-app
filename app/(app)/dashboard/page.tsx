@@ -4,35 +4,11 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getAllRecentActivity } from '@/lib/services/activity'
 import { TaskDetailModal } from '@/components/tasks/TaskDetailModal'
+import { PRIORITY_BADGE_COLORS } from '@/lib/constants'
+import type { Task, Activity, Project } from '@/lib/types'
 import Link from 'next/link'
 
-type Task = {
-  id: string
-  title: string
-  description: string | null
-  status: 'todo' | 'in_progress' | 'done'
-  priority: 'low' | 'medium' | 'high'
-  due_date: string | null
-  project_id: string
-  assignee_id: string | null
-  created_at: string
-  project?: { name: string }
-}
-
-type Activity = {
-  id: string
-  message: string
-  type: string
-  created_at: string
-  project?: { name: string }
-}
-
-type Project = {
-  id: string
-  name: string
-  description: string | null
-  created_at: string
-}
+type SupabaseClient = ReturnType<typeof createClient>
 
 function timeAgo(date: string) {
   const now = new Date()
@@ -55,15 +31,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  async function loadTasks(supabase: any, user: any, projectIds: string[]) {
+  async function loadTasks(supabase: SupabaseClient, userId: string, projectIds: string[]) {
     const { data: tasks } = await supabase
       .from('tasks')
       .select('*, project:projects(name)')
-      .eq('assignee_id', user.id)
+      .eq('assignee_id', userId)
       .neq('status', 'done')
       .order('due_date', { ascending: true, nullsFirst: false })
       .limit(10)
-    setMyTasks(tasks || [])
+    setMyTasks((tasks as Task[]) || [])
 
     if (projectIds.length > 0) {
       const { data: allOpenTasks } = await supabase
@@ -74,7 +50,7 @@ export default function DashboardPage() {
         .is('assignee_id', null)
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(10)
-      setAllTasks(allOpenTasks || [])
+      setAllTasks((allOpenTasks as Task[]) || [])
     }
   }
 
@@ -90,13 +66,16 @@ export default function DashboardPage() {
         .select('project:projects(*)')
         .eq('user_id', user.id)
         .limit(4)
-      setRecentProjects((memberships || []).map((m: any) => m.project))
+      setRecentProjects(((memberships || []) as { project: Project }[]).map(m => m.project))
 
-      const projectIds = (memberships || []).map((m: any) => m.project?.id).filter(Boolean)
-      await loadTasks(supabase, user, projectIds)
+      const projectIds = ((memberships || []) as { project: Project }[])
+        .map(m => m.project?.id)
+        .filter(Boolean) as string[]
+
+      await loadTasks(supabase, user.id, projectIds)
 
       const activityData = await getAllRecentActivity(user.id)
-      setActivity(activityData)
+      setActivity(activityData as Activity[])
 
       setLoading(false)
     }
@@ -111,8 +90,10 @@ export default function DashboardPage() {
       .from('project_members')
       .select('project_id')
       .eq('user_id', user.id)
-    const projectIds = (memberships || []).map((m: any) => m.project_id)
-    await loadTasks(supabase, user, projectIds)
+    const projectIds = ((memberships || []) as { project_id: string }[]).map(m => m.project_id)
+    await loadTasks(supabase, user.id, projectIds)
+    // Refresh selectedTask to avoid showing stale data
+    setSelectedTask(null)
   }
 
   const overdueTasks = myTasks.filter(t => t.due_date && new Date(t.due_date) < new Date())
@@ -122,12 +103,8 @@ export default function DashboardPage() {
     const now = new Date()
     return due >= now && due.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 2
   })
-
-  const PRIORITY_COLORS: Record<string, string> = {
-    low: 'bg-green-400/10 text-green-400',
-    medium: 'bg-yellow-400/10 text-yellow-400',
-    high: 'bg-red-400/10 text-red-400',
-  }
+  // Suppress unused warning — dueSoonTasks is intentionally computed for future use
+  void dueSoonTasks
 
   const TaskCard = ({ task }: { task: Task }) => {
     const isOverdue = task.due_date && new Date(task.due_date) < new Date()
@@ -140,7 +117,7 @@ export default function DashboardPage() {
           <p className="text-sm text-white/80 truncate flex-1">{task.title}</p>
           <div className="flex items-center gap-2 ml-2 flex-shrink-0">
             {task.priority && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_COLORS[task.priority]}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_BADGE_COLORS[task.priority]}`}>
                 {task.priority}
               </span>
             )}
@@ -151,7 +128,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        <p className="text-xs text-white/30 mt-1">{(task as any).project?.name}</p>
+        <p className="text-xs text-white/30 mt-1">{task.project?.name}</p>
       </div>
     )
   }
@@ -176,7 +153,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-3 sm:p-4">
             <p className="text-xs text-white/30 uppercase tracking-wide mb-1">My tasks</p>
@@ -196,7 +172,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Main content — stacks on mobile */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="sm:col-span-2 space-y-6">
             <div>
@@ -251,7 +226,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Activity feed */}
           <div>
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Recent activity</h2>
             {activity.length === 0 ? (
@@ -275,7 +249,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {selectedTask && (
+      {selectedTask && userId && (
         <TaskDetailModal
           task={selectedTask}
           projectId={selectedTask.project_id}

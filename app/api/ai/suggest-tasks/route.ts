@@ -13,7 +13,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Too many requests. Please wait an hour before trying again.' }, { status: 429 })
     }
 
-    const { projectName, projectDescription, existingTasks, focus } = await req.json()
+    const body = await req.json()
+    const { projectName, projectDescription, existingTasks, focus } = body
+
+    if (!projectName || typeof projectName !== 'string' || projectName.trim().length === 0) {
+      return NextResponse.json({ error: 'projectName is required.' }, { status: 400 })
+    }
+    if (projectName.length > 200) {
+      return NextResponse.json({ error: 'projectName is too long.' }, { status: 400 })
+    }
 
     const systemPrompt = `You are a helpful assistant for content creators — YouTubers, TikTokers, Instagram creators, podcasters, and anyone making content for fun or for a living.
 
@@ -81,11 +89,18 @@ Suggest 6 tasks to get this project started.`
 
     const text = data.choices[0].message.content.trim()
     const clean = text.replace(/```json|```/g, '').trim()
-    const tasks = JSON.parse(clean)
+
+    let tasks
+    try {
+      tasks = JSON.parse(clean)
+    } catch {
+      return NextResponse.json({ error: 'AI returned an invalid response. Please try again.' }, { status: 500 })
+    }
 
     return NextResponse.json({ tasks })
-  } catch (err: any) {
-    console.error('AI suggest error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
+    console.error('AI suggest error:', message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
