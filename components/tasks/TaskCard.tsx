@@ -4,29 +4,13 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TaskDetailModal } from './TaskDetailModal'
-
-type Task = {
-  id: string
-  title: string
-  description: string | null
-  status: 'todo' | 'in_progress' | 'done'
-  due_date: string | null
-  assignee_id: string | null
-  assignee?: { id: string; full_name: string; email: string } | null
-  priority: 'low' | 'medium' | 'high'
-  created_at: string
-}
+import { PRIORITY_BADGE_COLORS } from '@/lib/constants'
+import type { Task } from '@/lib/types'
 
 type Props = {
   task: Task
   projectId: string
   onUpdated: () => void
-}
-
-const PRIORITY_COLORS = {
-  low: 'bg-green-400/10 text-green-400',
-  medium: 'bg-yellow-400/10 text-yellow-400',
-  high: 'bg-red-400/10 text-red-400',
 }
 
 export function TaskCard({ task, projectId, onUpdated }: Props) {
@@ -71,7 +55,7 @@ export function TaskCard({ task, projectId, onUpdated }: Props) {
             </p>
             <div className="flex items-center gap-2 mt-1">
               {task.priority && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_COLORS[task.priority]}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_BADGE_COLORS[task.priority]}`}>
                   {task.priority}
                 </span>
               )}

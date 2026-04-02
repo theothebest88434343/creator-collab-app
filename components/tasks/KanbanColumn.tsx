@@ -3,18 +3,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { TaskCard } from './TaskCard'
-
-type Task = {
-  id: string
-  title: string
-  description: string | null
-  status: 'todo' | 'in_progress' | 'done'
-  due_date: string | null
-  assignee_id: string | null
-  assignee?: { id: string; full_name: string; email: string } | null
-  priority: 'low' | 'medium' | 'high'
-  created_at: string
-}
+import type { Task } from '@/lib/types'
 
 type Props = {
   id: string

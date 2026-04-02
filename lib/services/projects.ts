@@ -9,7 +9,8 @@ export async function getProjects(userId: string): Promise<Project[]> {
     .eq('user_id', userId)
 
   if (error) throw error
-  return data.map((d: { project: Project }) => d.project)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[]).map(d => d.project as Project)
 }
 
 export async function updateProject(projectId: string, name: string, description: string) {
