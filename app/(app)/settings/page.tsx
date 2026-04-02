@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 export default function SettingsPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
@@ -86,31 +85,33 @@ export default function SettingsPage() {
       setPasswordMessage({ type: 'error', text: error.message })
     } else {
       setPasswordMessage({ type: 'success', text: 'Password updated!' })
-      setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     }
     setPasswordLoading(false)
   }
 
+  const inputClass = "w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-3 text-white text-sm focus:outline-none focus:border-white/30 min-h-[44px]"
+  const btnClass = "w-full sm:w-auto rounded-lg bg-white text-black px-4 py-3 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]"
+
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <h1 className="text-2xl font-semibold text-white mb-8">Settings</h1>
 
         {/* Avatar */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-2xl font-semibold text-white/60">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/10 flex items-center justify-center text-xl sm:text-2xl font-semibold text-white/60 flex-shrink-0">
             {initial}
           </div>
-          <div>
-            <p className="text-white font-medium">{fullName || 'No name set'}</p>
-            <p className="text-white/40 text-sm">{email}</p>
+          <div className="min-w-0">
+            <p className="text-white font-medium truncate">{fullName || 'No name set'}</p>
+            <p className="text-white/40 text-sm truncate">{email}</p>
           </div>
         </div>
 
         {/* Profile */}
-        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 mb-4">
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-5 sm:p-6 mb-4">
           <h2 className="text-white font-semibold mb-4">Profile</h2>
           <form onSubmit={handleProfileSave} className="space-y-4">
             <div>
@@ -119,7 +120,7 @@ export default function SettingsPage() {
                 type="text"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30"
+                className={inputClass}
                 placeholder="Your name"
               />
             </div>
@@ -129,7 +130,7 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 disabled
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white/40 text-sm cursor-not-allowed"
+                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-3 text-white/40 text-sm cursor-not-allowed min-h-[44px]"
               />
             </div>
             {profileMessage && (
@@ -137,18 +138,14 @@ export default function SettingsPage() {
                 {profileMessage.text}
               </p>
             )}
-            <button
-              type="submit"
-              disabled={profileLoading}
-              className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
-            >
+            <button type="submit" disabled={profileLoading} className={btnClass}>
               {profileLoading ? 'Saving...' : 'Save changes'}
             </button>
           </form>
         </div>
 
         {/* Password */}
-        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-5 sm:p-6">
           <h2 className="text-white font-semibold mb-4">Change password</h2>
           <form onSubmit={handlePasswordSave} className="space-y-4">
             <div>
@@ -157,7 +154,7 @@ export default function SettingsPage() {
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30"
+                className={inputClass}
                 placeholder="New password"
               />
             </div>
@@ -167,7 +164,7 @@ export default function SettingsPage() {
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30"
+                className={inputClass}
                 placeholder="Confirm new password"
               />
             </div>
@@ -176,11 +173,7 @@ export default function SettingsPage() {
                 {passwordMessage.text}
               </p>
             )}
-            <button
-              type="submit"
-              disabled={passwordLoading}
-              className="rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
-            >
+            <button type="submit" disabled={passwordLoading} className={btnClass}>
               {passwordLoading ? 'Updating...' : 'Update password'}
             </button>
           </form>

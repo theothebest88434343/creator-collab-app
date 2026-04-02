@@ -26,7 +26,7 @@ export default function FilesPage() {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <Link href={`/projects/${id}`} className="text-sm text-white/40 hover:text-white/70 mb-2 block transition-colors">
             ← Back to project
@@ -44,7 +44,7 @@ export default function FilesPage() {
         ) : (
           <>
             {userId && (
-              <div className="mb-6 bg-[#1a1a1a] rounded-xl border border-white/5 px-5 py-4">
+              <div className="mb-6 bg-[#1a1a1a] rounded-xl border border-white/5 px-4 sm:px-5 py-4">
                 <FileUpload
                   projectId={id as string}
                   userId={userId}
