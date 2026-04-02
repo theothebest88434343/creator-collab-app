@@ -66,10 +66,12 @@ export default function DashboardPage() {
         .select('project:projects(*)')
         .eq('user_id', user.id)
         .limit(4)
-      setRecentProjects(((memberships || []) as { project: Project }[]).map(m => m.project))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const membershipList = (memberships || []) as any[]
+      setRecentProjects(membershipList.map(m => m.project as Project))
 
-      const projectIds = ((memberships || []) as { project: Project }[])
-        .map(m => m.project?.id)
+      const projectIds = membershipList
+        .map((m: { project: Project }) => m.project?.id)
         .filter(Boolean) as string[]
 
       await loadTasks(supabase, user.id, projectIds)
