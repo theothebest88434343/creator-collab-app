@@ -12,6 +12,9 @@ type Result = {
   projectId: string
 }
 
+type ProjectRow = { id: string; name: string; description: string | null }
+type TaskRow = { id: string; title: string; description: string | null; project_id: string; project: { name: string } | null }
+
 export function SearchModal({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
@@ -30,7 +33,6 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Get user's projects
     const { data: memberships } = await supabase
       .from('project_members')
       .select('project_id')
@@ -39,7 +41,6 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     const projectIds = memberships?.map(m => m.project_id) || []
     if (!projectIds.length) { setLoading(false); return }
 
-    // Search projects
     const { data: projects } = await supabase
       .from('projects')
       .select('id, name, description')
@@ -47,7 +48,6 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
       .ilike('name', `%${q}%`)
       .limit(3)
 
-    // Search tasks
     const { data: tasks } = await supabase
       .from('tasks')
       .select('id, title, description, project_id, project:projects(name)')
@@ -55,7 +55,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
       .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
       .limit(5)
 
-    const projectResults: Result[] = (projects || []).map(p => ({
+    const projectResults: Result[] = ((projects as ProjectRow[]) || []).map(p => ({
       id: p.id,
       title: p.name,
       type: 'project',
@@ -63,11 +63,11 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
       projectId: p.id,
     }))
 
-    const taskResults: Result[] = (tasks || []).map(t => ({
+    const taskResults: Result[] = ((tasks as unknown as TaskRow[]) || []).map(t => ({
       id: t.id,
       title: t.title,
       type: 'task',
-      subtitle: (t.project as any)?.name || 'Task',
+      subtitle: t.project?.name || 'Task',
       projectId: t.project_id,
     }))
 
@@ -93,8 +93,9 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
   }, [results, selected])
 
   function handleSelect(result: Result) {
-    if (result.type === 'project') {
-      router.push(`/projects/${result.projectId}`)
+    if (result.type === 'task') {
+      // Navigate to project with task query param so the kanban page can open it
+      router.push(`/projects/${result.projectId}?task=${result.id}`)
     } else {
       router.push(`/projects/${result.projectId}`)
     }
@@ -102,9 +103,8 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 pt-24 px-4">
+    <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 pt-16 sm:pt-24 px-4">
       <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-lg shadow-2xl overflow-hidden">
-        {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
           <span className="text-white/30 text-lg">⌕</span>
           <input
@@ -116,14 +116,14 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
             className="flex-1 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none"
           />
           {loading && <span className="text-white/30 text-xs animate-spin">⟳</span>}
-          <kbd className="text-white/20 text-xs border border-white/10 rounded px-1.5 py-0.5">ESC</kbd>
+          <kbd className="hidden sm:block text-white/20 text-xs border border-white/10 rounded px-1.5 py-0.5">ESC</kbd>
+          <button onClick={onClose} className="sm:hidden text-white/30 hover:text-white/70 text-lg transition-colors">✕</button>
         </div>
 
-        {/* Results */}
-        <div className="max-h-80 overflow-y-auto">
+        <div className="max-h-72 sm:max-h-80 overflow-y-auto">
           {query && results.length === 0 && !loading && (
             <div className="px-4 py-8 text-center">
-              <p className="text-white/30 text-sm">No results for "{query}"</p>
+              <p className="text-white/30 text-sm">No results for &quot;{query}&quot;</p>
             </div>
           )}
 
@@ -139,7 +139,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
                 <div
                   key={result.id}
                   onClick={() => handleSelect(result)}
-                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
                     selected === i ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
@@ -163,8 +163,8 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-2 border-t border-white/5 flex items-center gap-4">
+        {/* Keyboard hints — desktop only */}
+        <div className="hidden sm:flex px-4 py-2 border-t border-white/5 items-center gap-4">
           <span className="text-xs text-white/20">↑↓ navigate</span>
           <span className="text-xs text-white/20">↵ select</span>
           <span className="text-xs text-white/20">ESC close</span>

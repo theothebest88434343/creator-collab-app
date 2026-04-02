@@ -95,13 +95,13 @@ function ProjectsPage() {
               </button>
             </div>
           </div>
-        ) : (
+        ) : projects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {projects.map(project => (
               <ProjectCard key={project.id} project={project} onDeleted={refresh} />
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {showOnboarding && userId && (

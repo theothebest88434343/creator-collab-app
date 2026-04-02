@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { getFiles, getFileUrl } from '@/lib/services/files'
 import { FilePreviewModal } from './FilePreviewModal'
 
-type File = {
+type ProjectFile = {
   id: string
   name: string
   storage_path: string
@@ -18,9 +18,9 @@ type Props = {
 }
 
 export function FileList({ projectId }: Props) {
-  const [files, setFiles] = useState<File[]>([])
+  const [files, setFiles] = useState<ProjectFile[]>([])
   const [loading, setLoading] = useState(true)
-  const [previewFile, setPreviewFile] = useState<File | null>(null)
+  const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null)
 
   useEffect(() => {
     load()
@@ -68,10 +68,10 @@ export function FileList({ projectId }: Props) {
             className="flex items-center justify-between bg-[#1a1a1a] rounded-xl border border-white/5 px-4 py-3 hover:border-white/10 transition-all cursor-pointer"
             onClick={() => setPreviewFile(file)}
           >
-            <div className="flex items-center gap-3">
-              <span className="text-xl">{getFileIcon(file.mime_type)}</span>
-              <div>
-                <p className="text-sm font-medium text-white/80">{file.name}</p>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className="text-xl flex-shrink-0">{getFileIcon(file.mime_type)}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white/80 truncate">{file.name}</p>
                 <p className="text-xs text-white/30">
                   {(file.size_bytes / 1024).toFixed(1)} KB · {new Date(file.created_at).toLocaleDateString()}
                 </p>
@@ -82,9 +82,9 @@ export function FileList({ projectId }: Props) {
                 e.stopPropagation()
                 handleDownload(file.storage_path, file.name)
               }}
-              className="text-sm text-white/40 hover:text-white/70 font-medium transition-colors"
+              className="ml-3 flex-shrink-0 text-sm text-white/40 hover:text-white/70 font-medium transition-colors px-3 py-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              Download
+              ↓
             </button>
           </div>
         ))}

@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getTasks, updateTaskStatus } from '@/lib/services/tasks'
 import { KanbanColumn } from '@/components/tasks/KanbanColumn'
 import { NewTaskModal } from '@/components/tasks/NewTaskModal'
+import { TaskDetailModal } from '@/components/tasks/TaskDetailModal'
 import { AISuggestModal } from '@/components/tasks/AISuggestModal'
 import { PresenceAvatars } from '@/components/tasks/PresenceAvatars'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -25,13 +26,15 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 
-export default function ProjectPage() {
+function ProjectPage() {
   const { id } = useParams()
+  const searchParams = useSearchParams()
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [dragStartStatus, setDragStartStatus] = useState<string | null>(null)
@@ -78,6 +81,12 @@ export default function ProjectPage() {
       try {
         const data = await getTasks(id as string)
         setTasks(data)
+
+        const taskParam = searchParams.get('task')
+        if (taskParam) {
+          const match = data.find(t => t.id === taskParam)
+          if (match) setSelectedTask(match)
+        }
       } catch (err) {
         console.error('getTasks error:', err)
       }
@@ -393,6 +402,23 @@ export default function ProjectPage() {
           onClose={() => setShowAIModal(false)}
         />
       )}
+
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          projectId={id as string}
+          onUpdated={refreshTasks}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
     </div>
+  )
+}
+
+export default function ProjectPageWrapper() {
+  return (
+    <Suspense>
+      <ProjectPage />
+    </Suspense>
   )
 }

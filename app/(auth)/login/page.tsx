@@ -34,7 +34,7 @@ export default function LoginPage() {
             <input
               id="email" name="email" type="email"
               placeholder="Email" required
-              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
             />
           </div>
 
@@ -43,7 +43,7 @@ export default function LoginPage() {
             <input
               id="password" name="password" type="password"
               placeholder="Password" required
-              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+              className="block w-full rounded-lg bg-[#1a1a1a] border border-white/10 px-3 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
             />
           </div>
 
@@ -60,7 +60,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-white/90 disabled:opacity-50 transition-colors"
+            className="flex w-full justify-center rounded-lg bg-white px-4 py-3 text-sm font-medium text-black hover:bg-white/90 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Logging in...' : 'Log in'}
           </button>

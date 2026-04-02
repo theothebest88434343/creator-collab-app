@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { PRIORITY_BADGE_COLORS } from '@/lib/constants'
+import type { TaskPriority } from '@/lib/types'
 
 type SuggestedTask = {
   title: string
-  priority: 'low' | 'medium' | 'high'
+  priority: TaskPriority
   due_days: number
 }
 
@@ -16,12 +18,6 @@ type Props = {
   existingTasks: string[]
   onCreated: () => void
   onClose: () => void
-}
-
-const PRIORITY_COLORS = {
-  low: 'bg-green-400/10 text-green-400',
-  medium: 'bg-yellow-400/10 text-yellow-400',
-  high: 'bg-red-400/10 text-red-400',
 }
 
 const LOADING_STEPS = [
@@ -61,12 +57,7 @@ export function AISuggestModal({
       const res = await fetch('/api/ai/suggest-tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectName,
-          projectDescription,
-          existingTasks,
-          focus,
-        }),
+        body: JSON.stringify({ projectName, projectDescription, existingTasks, focus }),
       })
 
       const data = await res.json()
@@ -75,11 +66,11 @@ export function AISuggestModal({
       if (!res.ok) throw new Error(data.error || 'Failed to generate suggestions')
 
       setSuggestions(data.tasks)
-      setSelected(new Set(data.tasks.map((_: any, i: number) => i)))
+      setSelected(new Set(data.tasks.map((_: SuggestedTask, i: number) => i)))
       setStep('review')
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearInterval(interval)
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       setStep('prompt')
     }
   }
@@ -121,7 +112,6 @@ export function AISuggestModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
       <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-lg flex flex-col" style={{ maxHeight: '85vh' }}>
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-lg">✨</span>
@@ -131,8 +121,6 @@ export function AISuggestModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-
-          {/* Step 1 — Prompt */}
           {step === 'prompt' && (
             <div className="space-y-4">
               <p className="text-white/40 text-sm">
@@ -150,7 +138,9 @@ export function AISuggestModal({
                   className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-white/30 resize-none placeholder-white/20"
                 />
               </div>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {error && (
+                <p className="rounded-lg bg-red-400/10 border border-red-400/20 px-3 py-2 text-sm text-red-400">{error}</p>
+              )}
               <button
                 onClick={handleGenerate}
                 className="w-full rounded-lg bg-white text-black px-4 py-2.5 text-sm font-medium hover:bg-white/90 transition-colors"
@@ -160,7 +150,6 @@ export function AISuggestModal({
             </div>
           )}
 
-          {/* Step 2 — Loading */}
           {step === 'loading' && (
             <div className="flex flex-col items-center justify-center py-12 space-y-6">
               <div className="relative w-16 h-16">
@@ -184,7 +173,6 @@ export function AISuggestModal({
             </div>
           )}
 
-          {/* Step 3 — Review */}
           {step === 'review' && (
             <div className="space-y-2">
               <p className="text-xs text-white/40 uppercase tracking-wide mb-3">
@@ -212,7 +200,7 @@ export function AISuggestModal({
                       <p className="text-sm text-white/80">{task.title}</p>
                       <p className="text-xs text-white/30 mt-0.5">Due {due.toLocaleDateString()}</p>
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${PRIORITY_COLORS[task.priority]}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${PRIORITY_BADGE_COLORS[task.priority]}`}>
                       {task.priority}
                     </span>
                   </div>
