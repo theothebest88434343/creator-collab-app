@@ -17,17 +17,17 @@ Instead of generic business tools, Collab is built for creators. Type something 
 
 ## Features
 
-- **✨ AI Project Generator** — describe your idea casually and AI creates a full project with tasks, priorities, and due dates tailored to your niche
-- **✨ AI Task Suggestions** — get smart task suggestions inside any existing project
-- **📋 Kanban Board** — drag and drop tasks between To Do, In Progress, and Done
-- **💬 Real-time Comments** — comment on tasks with your team in real time using Supabase Realtime
-- **👥 Team Collaboration** — invite members by email, assign tasks, see who's currently viewing a project
-- **🔔 Notifications** — get notified when assigned a task, added to a project, or when task statuses change
-- **📁 File Management** — upload, preview, and share files directly inside projects
-- **📊 Dashboard** — see all your tasks, overdue items, unassigned work, and activity feed across all projects
-- **🔍 Global Search** — search tasks and projects instantly with Cmd+K
-- **📱 Mobile Responsive** — works on all screen sizes with a collapsible sidebar
-- **🎯 Onboarding Flow** — guided setup for new users
+- **AI Project Generator** — describe your idea casually and AI creates a full project with tasks, priorities, and due dates tailored to your niche
+- **AI Task Suggestions** — get smart task suggestions inside any existing project
+- **Kanban Board** — drag and drop tasks between To Do, In Progress, and Done
+- **Real-time Comments** — comment on tasks with your team in real time using Supabase Realtime
+- **Team Collaboration** — invite members by email, assign tasks, see who's currently viewing a project
+- **Notifications** — get notified when assigned a task, added to a project, or when task statuses change
+- **File Management** — upload, preview, and share files directly inside projects
+- **Dashboard** — see all your tasks, overdue items, unassigned work, and activity feed across all projects
+- **Global Search** — search tasks and projects instantly with Cmd+K
+- **Mobile Responsive** — works on all screen sizes with a collapsible sidebar
+- **Onboarding Flow** — guided setup for new users
 
 ---
 
